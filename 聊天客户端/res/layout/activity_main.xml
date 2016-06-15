@@ -1,0 +1,66 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".MainActivity" >
+
+    <ListView 
+        android:id="@+id/lv_main"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone">
+    </ListView>
+    <TextView 
+        android:id="@+id/tv_main_empt"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:text="没有聊天内容"
+        android:textSize="25sp"
+        android:gravity="center"/>
+	<LinearLayout 
+	    android:id="@+id/ll_main_connect"
+	    android:layout_width="match_parent"
+	    android:layout_height="45dp"
+	    android:orientation="horizontal">
+
+		<EditText
+		    android:id="@+id/et_main_NickName"
+		    android:layout_width="wrap_content"
+		    android:layout_height="wrap_content"
+		    android:layout_weight="1"
+		    android:hint="请输入昵称"
+		    android:ems="10" />
+		<Button
+		    android:id="@+id/btn_main_connect"
+		    android:layout_width="wrap_content"
+		    android:layout_height="wrap_content"
+		    android:layout_weight="1"
+		    android:onClick="onClick"
+		    android:text="send" />
+	</LinearLayout>
+	<LinearLayout 
+	    android:id="@+id/ll_main_chat"
+	    android:layout_width="match_parent"
+	    android:layout_height="45dp"
+	    android:orientation="horizontal"
+	    android:visibility="gone">
+
+		<EditText
+		    android:id="@+id/et_main_Content"
+		    android:layout_width="wrap_content"
+		    android:layout_height="wrap_content"
+		    android:layout_weight="1"
+		    android:hint="请输入内容"
+		    android:ems="10" />
+		<Button
+		    android:id="@+id/btn_main_chat"
+		    android:layout_width="wrap_content"
+		    android:layout_height="wrap_content"
+		    android:layout_weight="1"
+		     android:onClick="onClick"
+		    android:text="send" />
+	</LinearLayout>
+</LinearLayout>

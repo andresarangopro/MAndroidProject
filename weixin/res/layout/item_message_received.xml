@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="8dip" >
+
+    <ImageView
+        android:id="@+id/iv_item_message_avatar"
+        android:layout_width="48dip"
+        android:layout_height="48dip"
+        android:src="@drawable/ic_launcher" />
+
+    <View
+        android:layout_width="8dip"
+        android:layout_height="fill_parent" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" >
+
+        <TextView
+            android:id="@+id/tv_item_message_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="SomeBody" />
+
+        <TextView
+            android:id="@+id/tv_item_message_content"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:maxLines="4"
+            android:paddingBottom="5dip"
+            android:paddingTop="5dip"
+            android:text="你的影子在每一个角落\n 好像是在提醒着我" />
+
+        <TextView
+            android:id="@+id/tv_item_message_more"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="显示更多"
+            android:visibility="gone" />
+
+        <GridView
+            android:id="@+id/gv_item_message_picsContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:numColumns="3" />
+
+        <RelativeLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical" >
+
+            <TextView
+                android:id="@+id/tv_item_message_publish_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:text="2天前" />
+
+            <TextView
+                android:id="@+id/tv_item_message_phone"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_toRightOf="@id/tv_item_message_publish_time"
+                android:paddingLeft="5dip"
+                android:text="来自POCO相机" />
+
+            <ImageButton
+                android:id="@+id/ib_item_message_send_message"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:background="@drawable/coment"
+                android:focusable="true" />
+        </RelativeLayout>
+
+        <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/detail"
+            android:orientation="vertical" >
+
+            <TextView
+                android:id="@+id/tv_item_message_praise"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:drawableLeft="@drawable/likeicon"
+                android:text="寂寞" />
+
+            <TextView
+                android:id="@+id/tv_item_message_Comment"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="窗外有朵樱花， 开得那么灿烂" />
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>

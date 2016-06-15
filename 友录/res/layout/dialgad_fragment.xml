@@ -1,0 +1,39 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity" >
+    <include 
+        android:id="@+id/headerview"
+        layout="@layout/header_view"
+        />
+    <ListView 
+        android:id="@+id/lv_dial_calllogs"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/headerview"
+        ></ListView>
+	
+    <RelativeLayout 
+        android:id="@+id/rl_dial_container"
+        android:layout_width="match_parent"
+        android:layout_height="250dp"
+        android:layout_alignParentBottom="true"
+        android:background="@drawable/dialpad_bg"
+        >
+        
+        
+        <ImageView 
+            android:id="@+id/iv_dial_call"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_call"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="5dp"
+            />
+        
+    </RelativeLayout>
+
+
+</RelativeLayout>
