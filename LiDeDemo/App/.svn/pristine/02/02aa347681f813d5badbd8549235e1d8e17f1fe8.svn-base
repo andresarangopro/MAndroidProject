@@ -1,0 +1,13 @@
+package com.lide.app.config;
+
+/**
+ * Created by lubin on 2016/7/11.
+ */
+public class Configs {
+    public static String SETINVENTORY = "SETINVENTORY";
+    public static String STOPINVENTORY = "STOPINVENTORY";
+    public static String SEARCHTAG = "SEARCHTAG";
+    public static String Inventory = "Inventory";
+    public static String Between = "Between";
+    public static String Q = "Q";
+}

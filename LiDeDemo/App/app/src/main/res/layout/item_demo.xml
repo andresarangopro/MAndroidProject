@@ -1,0 +1,57 @@
+<com.daimajia.swipe.SwipeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/sample1"
+    android:layout_width="match_parent"
+    android:layout_height="80dp">
+    <!-- Bottom View Start-->
+    <LinearLayout
+        android:id="@+id/bottom_wrapper"
+        android:layout_width="250dp"
+        android:layout_height="match_parent"
+        android:background="#66ddff00"
+        android:orientation="horizontal"
+        >
+        <!--What you want to show-->
+        <TextView
+            android:id="@+id/zan_demo"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@color/bg_color_base"
+            android:gravity="center"
+            android:text="点赞"
+            android:textColor="@color/white"
+            android:textSize="20sp" />
+
+        <TextView
+            android:id="@+id/delete_demo"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="#f40717"
+            android:gravity="center"
+            android:text="删除"
+            android:textColor="@color/white"
+            android:textSize="20sp" />
+    </LinearLayout>
+    <!-- Bottom View End-->
+
+    <!-- Surface View Start -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#ffffff"
+        >
+        <!--What you want to show in SurfaceView-->
+        <TextView
+            android:id="@+id/text_item_demo"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="#ffffff"
+            android:gravity="center_vertical"
+            android:paddingLeft="20dp"
+            android:text="删除"
+            android:textSize="20sp" />
+    </LinearLayout>
+    <!-- Surface View End -->
+</com.daimajia.swipe.SwipeLayout>

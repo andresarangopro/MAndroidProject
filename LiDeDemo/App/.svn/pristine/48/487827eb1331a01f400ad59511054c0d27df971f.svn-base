@@ -1,0 +1,15 @@
+package com.lide.app.config;
+
+/**
+ * Created by lubin on 2016/7/11.
+ */
+public class Configs {
+    public static String SET_INVENTORY = "SET_INVENTORY";
+    public static String STOP_SCAN = "STOP_SCAN";
+    public static String SCAN_TAG = "SCAN_TAG";
+    public static String RECEIVE_TAG = "RECEIVE_TAG";
+    public static String Inventory = "Inventory";
+    public static String Between = "Between";
+    public static String Q = "Q";
+    public static String Result_Tag = "Result_Tag";
+}

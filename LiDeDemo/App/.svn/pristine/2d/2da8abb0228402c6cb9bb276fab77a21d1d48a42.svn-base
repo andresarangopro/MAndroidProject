@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:title="标签操作">
+        <menu>
+            <item
+                android:id="@+id/nav_search"
+                android:icon="@mipmap/edit_delete_login"
+                android:title="扫面标签" />
+            <item
+                android:id="@+id/nav_write"
+                android:icon="@mipmap/edit_delete_login"
+                android:title="写数据" />
+            <item
+                android:id="@+id/nav_read"
+                android:icon="@mipmap/edit_delete_login"
+                android:title="读数据" />
+            <item
+                android:id="@+id/nav_set"
+                android:icon="@mipmap/edit_delete_login"
+                android:title="设置" />
+
+            <item
+                android:id="@+id/nav_kill"
+                android:icon="@mipmap/edit_delete_login"
+                android:title="销毁" />
+            <item
+                android:id="@+id/nav_lock"
+                android:icon="@mipmap/edit_delete_login"
+                android:title="锁定" />
+        </menu>
+    </item>
+    <!--    <item android:title="Sub items">
+            <menu>
+                <item
+                    android:icon="@mipmap/edit_delete_login"
+                    android:title="Sub item 1"/>
+                <item
+                    android:icon="@mipmap/edit_delete_login"
+                    android:title="Sub item 2"/>
+            </menu>
+        </item>-->
+
+</menu>

@@ -1,0 +1,49 @@
+package com.lide.app.ui.fragment;
+
+import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ListView;
+import android.widget.Toast;
+
+import com.lide.app.R;
+import com.lide.app.adapter.DemoAdapter;
+
+import java.util.ArrayList;
+
+public class DemoFragment extends FragmentBase {
+
+    private ArrayList<String> data;
+    private DemoAdapter mAdapter;
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+
+        View view = inflater.inflate(R.layout.fragment_demo, container, false);
+        ListView mlistView = (ListView) view.findViewById(R.id.ll_demo);
+        data = new ArrayList<>();
+        for (int i = 0; i < 30; i++) {
+            data.add("第" + i + "个item");
+        }
+
+        mAdapter = new DemoAdapter(getActivity(), data);
+        mlistView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Toast.makeText(getActivity(),""+position, Toast.LENGTH_SHORT).show();
+            }
+        });
+        mlistView.setAdapter(mAdapter);
+        return view;
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+
+        super.onActivityCreated(savedInstanceState);
+    }
+}

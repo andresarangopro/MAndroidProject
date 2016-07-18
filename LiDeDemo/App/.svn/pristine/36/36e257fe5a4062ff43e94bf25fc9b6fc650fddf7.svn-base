@@ -1,0 +1,29 @@
+package com.lide.app.model;
+
+import com.lide.app.model.MInterface.ICheckTaskModel;
+
+/**
+ * Created by lubin on 2016/7/18.
+ */
+public class CheckTaskModelImpl implements ICheckTaskModel {
+
+    @Override
+    public void addCheckTask(String taskName) {
+
+    }
+
+    @Override
+    public void deleteCheckTask(String taskName) {
+
+    }
+
+    @Override
+    public void updateCheckTaskName(String lapsedName, String newName) {
+
+    }
+
+    @Override
+    public void queryCheckTask(String keyword) {
+
+    }
+}
