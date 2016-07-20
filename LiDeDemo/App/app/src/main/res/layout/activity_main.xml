@@ -34,7 +34,7 @@
             android:id="@+id/toolbar_shadow"
             android:layout_width="match_parent"
             android:layout_height="3dp"
-            android:background="@drawable/toolbar_dropshadow"
+            android:background="@drawable/down_dropshadow"
             android:layout_below="@id/title_main"/>
 
         <com.lide.app.view.NoScrollViewPager
@@ -50,6 +50,7 @@
             android:layout_alignParentBottom="true"
             android:layout_alignParentRight="true"
             android:layout_margin="10dp"
+            android:visibility="gone"
             android:src="@mipmap/menu_icon"
             app:backgroundTint="#30469b"
             app:borderWidth="0dp"

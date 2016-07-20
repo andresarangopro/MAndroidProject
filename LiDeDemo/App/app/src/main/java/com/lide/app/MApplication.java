@@ -4,6 +4,9 @@ import android.app.Application;
 import android.app.NotificationManager;
 import android.content.Context;
 
+import com.lide.app.service.THDevOpenHelper;
+import com.lubin.dao.DaoMaster;
+import com.lubin.dao.DaoSession;
 import com.nostra13.universalimageloader.cache.disc.impl.UnlimitedDiscCache;
 import com.nostra13.universalimageloader.cache.disc.naming.Md5FileNameGenerator;
 import com.nostra13.universalimageloader.cache.memory.impl.WeakMemoryCache;
@@ -16,7 +19,8 @@ import java.io.File;
 
 public class MApplication extends Application {
     public static MApplication mInstance;
-
+    private static DaoMaster daoMaster;
+    private static DaoSession daoSession;
     @Override
     public void onCreate() {
         mInstance = this;
@@ -24,6 +28,37 @@ public class MApplication extends Application {
         initImageLoader(this);
         super.onCreate();
     }
+
+    /**
+     * 取得DaoMaster
+     *
+     * @param context        上下文
+     * @return               DaoMaster
+     */
+    public static DaoMaster getDaoMaster(Context context) {
+        if (daoMaster == null) {
+            DaoMaster.OpenHelper helper = new THDevOpenHelper(context,"myDb",null);
+            daoMaster = new DaoMaster(helper.getWritableDatabase());
+        }
+        return daoMaster;
+    }
+
+    /**
+     * 取得DaoSession
+     *
+     * @param context        上下文
+     * @return               DaoSession
+     */
+    public static DaoSession getDaoSession(Context context) {
+        if (daoSession == null) {
+            if (daoMaster == null) {
+                daoMaster = getDaoMaster(context);
+            }
+            daoSession = daoMaster.newSession();
+        }
+        return daoSession;
+    }
+
 
     /**
      * 初始化ImageLoader

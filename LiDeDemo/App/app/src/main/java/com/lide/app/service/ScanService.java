@@ -10,46 +10,27 @@ import android.os.IBinder;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.lide.app.bean.DBBean.CheckTask;
-import com.lide.app.bean.DBBean.EPC;
-import com.lide.app.bean.DBBean.User;
 import com.lide.app.config.Configs;
 import com.lide.app.util.StringUtils;
+import com.lubin.bean.CheckTask;
+import com.lubin.bean.EPC;
 import com.rscja.deviceapi.RFIDWithUHF;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 public class ScanService extends Service {
     private ServiceReceiver myReceiver;
     private RFIDWithUHF mReader;
     private int inventoryFlag = 1;
     private boolean loopFlag = false;
-    private User user;
-    private CheckTask task;
-    private List<String> EPCs;
+    private DbService db;
+    private CheckTask checkTask;
 
     public void onCreate() {
         super.onCreate();
         init();
         initReceiver();
 
-//        user = new User();
-//        user.setWarehouseCode("001");
-//        user.setUserName("admin");
-//        user.setPassword("admin");
-//        user.setSaveState(2);
-//        user.setApiKey("5a3e93bd-b8dd-4d1a-afb1-731d15fb2e4c");
-//        user.save();
-//
-//        task = new CheckTask();
-//        task.setName("tw001");
-//        task.setNumber(98);
-//        task.setUser(user);
-//        task.save();
-
-        EPCs = new ArrayList<>();
     }
 
     private void init() {
@@ -58,6 +39,7 @@ public class ScanService extends Service {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        db = DbService.getInstance(this);
     }
 
     @Override
@@ -172,10 +154,14 @@ public class ScanService extends Service {
             String[] res = null;
 
             while (loopFlag) {
-                res = mReader.readTagFormBuffer();
+                res = mReader.readTagFromBuffer();
 
                 if (res != null) {
+
+
+
                     strTid = res[0];
+
                     if (!strTid.equals("0000000000000000") && !strTid.equals("000000000000000000000000")) {
                         strResult = "TID:" + strTid + "\n";
                     } else {
@@ -188,13 +174,12 @@ public class ScanService extends Service {
                             +e+ "@"
                             + res[2];
 
-                    if(!EPCs.contains(e)){
+                    if(db.queryEPC(e).size()==0){
                         EPC epc = new EPC();
-                        epc.setDistance(res[2]);
-                        epc.setEPC(res[1]);
-                        epc.setTask(task);
-                        epc.save();
-                        EPCs.add(e);
+                        epc.setTid(strTid);
+                        epc.setEpc(e);
+                        epc.setIsUploading(false);
+                        db.saveEPC(epc);
                     }
 
                     Intent intent = new Intent(Configs.RECEIVE_TAG);

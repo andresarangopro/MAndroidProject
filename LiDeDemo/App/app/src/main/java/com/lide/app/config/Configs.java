@@ -17,6 +17,26 @@ public class Configs {
     public static String Between = "Between";
     public static String Q = "Q";
     public static String Result_Tag = "Result_Tag";
+    public static String CheckTask  = "checkTask";
     //查询
     public static String All = "全部";
+
+
+
+
+
+
+
+
+
+
+
+
+    //=======djc==================
+    //显示读取Fragment
+    public static int READ_FRAGMENT = 0;
+    //显示上传Fragment
+    public static  int UPOLAD_FRAGMENT = 1;
+    //显示盘点单Fragment
+    public static int SHEET_FRAGMENT = 2;
 }

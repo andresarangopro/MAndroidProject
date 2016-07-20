@@ -1,6 +1,6 @@
 package com.lide.app.listener;
 
-import com.lide.app.bean.DBBean.CheckTask;
+import com.lubin.bean.CheckTask;
 
 import java.util.List;
 

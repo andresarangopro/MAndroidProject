@@ -6,6 +6,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -13,11 +14,12 @@ import com.lide.app.MApplication;
 import com.lide.app.R;
 import com.lide.app.util.Utils;
 import com.lide.app.view.SlidingButtonView;
+import com.lubin.bean.CheckTask;
 
 import java.util.List;
 
 /**
- * Created by MJJ on 2015/7/25.
+ * Created by daijicheng 2016/7/12.
  */
 
 public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.MyViewHolder> implements SlidingButtonView.IonSlidingButtonListener {
@@ -26,32 +28,37 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.MyViewHolder> 
 
     private IonSlidingViewClickListener mIDeleteBtnClickListener;
 
-    private List<String> mDatas;
+    private List<CheckTask> mDatas;
     private SlidingButtonView mMenu = null;
 
     //构造方法中设置数据
 
-    public TaskAdapter(Context context , List data,IonSlidingViewClickListener mIDeleteBtnClickListener) {
+    public TaskAdapter(Context context, List<CheckTask> data, IonSlidingViewClickListener mIDeleteBtnClickListener) {
         this.mDatas = data;
         mContext = context;
         this.mIDeleteBtnClickListener = mIDeleteBtnClickListener;
-        //djc
-        //this.mModifyBtnClickListener =  mModifyBtnClickListener;
 
     }
-
 
 
     @Override
     public int getItemCount() {
-        return mDatas.size();
+        if (mDatas != null) {
+            return mDatas.size();
+        } else {
+            return 0;
+        }
     }
 
     @Override
     public void onBindViewHolder(final MyViewHolder holder, int position) {
+        CheckTask task = mDatas.get(position);
 
-        holder.textView_up.setText(mDatas.get(position));
-        holder.textView_down.setText("lala");
+        holder.name.setText(task.getName());
+        holder.warehouseNum.setText("Tx0001");
+        if(task.getCompete()){
+
+        }
         //设置内容布局的宽为屏幕宽度
         holder.layout_content.getLayoutParams().width = Utils.getScreenWidth(MApplication.getInstance());
         //v1
@@ -73,6 +80,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.MyViewHolder> 
             public void onClick(View v) {
                 int n = holder.getLayoutPosition();
                 mIDeleteBtnClickListener.onDeleteBtnCilck(v, n);
+                closeMenu();//关闭菜单
             }
         });
 
@@ -81,7 +89,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.MyViewHolder> 
             @Override
             public void onClick(View v) {
                 int n = holder.getLayoutPosition();
-             //   mModifyBtnClickListener.onModifyBtnCilck(v, n);
+                //   mModifyBtnClickListener.onModifyBtnCilck(v, n);
                 mIDeleteBtnClickListener.onModifyBtnCilck(v, n);
             }
         });
@@ -91,7 +99,7 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.MyViewHolder> 
     @Override
     public MyViewHolder onCreateViewHolder(ViewGroup arg0, int arg1) {
 
-        View view = LayoutInflater.from(mContext).inflate(R.layout.layout_item, arg0,false);
+        View view = LayoutInflater.from(mContext).inflate(R.layout.item_check_task, arg0, false);
 
         MyViewHolder holder = new MyViewHolder(view);
 
@@ -99,29 +107,29 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.MyViewHolder> 
     }
 
 
-
     class MyViewHolder extends RecyclerView.ViewHolder {
         public TextView btn_Delete;
-        //djc
         public TextView btn_Modify;
-        public TextView textView_up;
-        public TextView textView_down;
-        public ViewGroup layout_content;
+        public TextView name;
+        public TextView warehouseNum;
         public LinearLayout ll_task;
+        public ViewGroup layout_content;
+        public ImageView isComplete;
+
         public MyViewHolder(View itemView) {
             super(itemView);
-            btn_Delete = (TextView) itemView.findViewById(R.id.tv_delete);
-            btn_Modify = (TextView) itemView.findViewById(R.id.tv_modify);
-            textView_up = (TextView) itemView.findViewById(R.id.text_up);
-            textView_down = (TextView) itemView.findViewById(R.id.text_down);
+            btn_Delete = (TextView) itemView.findViewById(R.id.tv_check_task_item_delete);
+            btn_Modify = (TextView) itemView.findViewById(R.id.tv_check_task_item_modify);
+            name = (TextView) itemView.findViewById(R.id.tv_check_task_item_name);
+            warehouseNum = (TextView) itemView.findViewById(R.id.tv_check_task_item_warehouseNum);
+            isComplete = (ImageView) itemView.findViewById(R.id.iv_check_task_item_updownload);
             ll_task = (LinearLayout) itemView.findViewById(R.id.ll_task);
             layout_content = (ViewGroup) itemView.findViewById(R.id.layout_content);
-
             ((SlidingButtonView) itemView).setSlidingButtonListener(TaskAdapter.this);
         }
     }
 
-    public void addData(int position,String task) {
+/*    public void addData(int position,String task) {
         mDatas.add(position, task);
         notifyItemInserted(position);
     }
@@ -137,8 +145,17 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.MyViewHolder> 
         notifyItemChanged(position);
         //yuan ma
         // notifyItemRemoved(position);
+    }*/
+
+    public void refreshAllData(List<CheckTask> tasks) {
+        mDatas.clear();
+        mDatas.addAll(tasks);
+        this.notifyDataSetChanged();
     }
 
+    public CheckTask getCheckTask(int position) {
+        return mDatas.get(position);
+    }
 
     /**
      * 删除菜单打开信息接收
@@ -150,12 +167,13 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.MyViewHolder> 
 
     /**
      * 滑动或者点击了Item监听
+     *
      * @param slidingButtonView
      */
     @Override
     public void onDownOrMove(SlidingButtonView slidingButtonView) {
-        if(menuIsOpen()){
-            if(mMenu != slidingButtonView){
+        if (menuIsOpen()) {
+            if (mMenu != slidingButtonView) {
                 closeMenu();
             }
         }
@@ -169,20 +187,23 @@ public class TaskAdapter extends RecyclerView.Adapter<TaskAdapter.MyViewHolder> 
         mMenu = null;
 
     }
+
     /**
      * 判断是否有菜单打开
      */
     public Boolean menuIsOpen() {
-        if(mMenu != null){
+        if (mMenu != null) {
             return true;
         }
-        Log.i("asd","mMenu为null");
+        Log.i("asd", "mMenu为null");
         return false;
     }
 
     public interface IonSlidingViewClickListener {
         void onItemClick(View view, int position);
+
         void onDeleteBtnCilck(View view, int position);
+
         void onModifyBtnCilck(View view, int position);
 
     }

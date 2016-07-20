@@ -1,6 +1,6 @@
 package com.lide.app.ui.VInterface;
 
-import com.lide.app.bean.DBBean.CheckTask;
+import com.lubin.bean.CheckTask;
 
 import java.util.List;
 

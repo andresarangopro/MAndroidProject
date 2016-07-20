@@ -1,0 +1,78 @@
+package com.lide.app.util;
+
+import com.android.volley.AuthFailureError;
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.StringRequest;
+import com.lide.app.listener.OnLoadingFinishListener;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Created by lubin on 2016/7/20.
+ */
+public class HttpUtil {
+
+    public static void login(RequestQueue requestQueue, final String body, final OnLoadingFinishListener listener) {
+
+        String apiUrl = "http://192.168.8.253:8080/hdwapi-main/";
+
+        String apiMethod = "api/security/login";
+
+        String postUrl = apiUrl + apiMethod;
+
+/*
+        final JSONObject body = new JSONObject();
+        try {
+            body.put("businessModuleCode", "HDW");
+            body.put("accountType", "EMPLOYEE");
+            body.put("warehouseCode","0001");
+            body.put("username", "admin");
+            body.put("password", "admin");
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+*/
+
+        StringRequest request = new StringRequest(Request.Method.POST, postUrl, new Response.Listener<String>() {
+
+            @Override
+            public void onResponse(String result) {
+                listener.onLoadingFinish(result);
+            }
+        }, new Response.ErrorListener() {
+
+            @Override
+            public void onErrorResponse(VolleyError arg0) {
+                listener.onLoadingFinish("登陆失败");
+            }
+        }) {
+
+            @Override
+            public byte[] getBody() throws AuthFailureError {
+                return body.getBytes();
+            }
+
+            @Override
+            public String getBodyContentType() {
+                return "application/json";
+            }
+
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                HashMap<String, String> map = new HashMap<String, String>();
+                map.put("accept", "*/*");
+                map.put("connection", "Keep-Alive");
+                map.put("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
+                map.put("Content-type", "application/json;charset=utf-8");
+                return super.getHeaders();
+            }
+        };
+        requestQueue.add(request);
+    }
+
+
+}

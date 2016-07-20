@@ -59,15 +59,16 @@ public class ChannelFragment extends FragmentBase {
         mTitleStrs.add("找货3");
         mTitleStrs.add("登录3");
         mDrawableIds = new ArrayList<>();
-        mDrawableIds.add(R.drawable.a);
-        mDrawableIds.add(R.drawable.b);
-        mDrawableIds.add(R.drawable.c);
-        mDrawableIds.add(R.drawable.a);
-        mDrawableIds.add(R.drawable.b);
-        mDrawableIds.add(R.drawable.c);
-        mDrawableIds.add(R.drawable.a);
-        mDrawableIds.add(R.drawable.b);
-        mDrawableIds.add(R.drawable.c);
+        mDrawableIds.add(R.mipmap.a);
+        mDrawableIds.add(R.mipmap.b);
+        mDrawableIds.add(R.mipmap.c);
+        mDrawableIds.add(R.mipmap.a);
+        mDrawableIds.add(R.mipmap.b);
+        mDrawableIds.add(R.mipmap.c);
+        mDrawableIds.add(R.mipmap.a);
+        mDrawableIds.add(R.mipmap.b);
+        mDrawableIds.add(R.mipmap.c);
+
 
     }
 

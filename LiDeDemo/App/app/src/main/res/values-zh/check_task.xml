@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="add_check_task_succeed">添加任务成功</string>
-    <string name="add_check_task_fail">任务已存在</string>
-    <string name="delete_check_task_succeed">删除任务成功</string>
-    <string name="delete_check_task_fail">删除任务失败</string>
-    <string name="update_check_task_succeed">修改成功</string>
-    <string name="update_check_task_fail">修改失败</string>
+    <string name="add_check_task_succeed">添加任务成功！</string>
+    <string name="add_check_task_fail">名字已存在，添加任务失败！</string>
+    <string name="delete_check_task_succeed">删除任务成功！</string>
+    <string name="delete_check_task_fail">删除任务失败!</string>
+    <string name="update_check_task_succeed">修改任务成功！</string>
+    <string name="update_check_task_fail">名字已存在，修改任务失败！</string>
+    <string name="empty_data">名字不能空！</string>
 </resources>

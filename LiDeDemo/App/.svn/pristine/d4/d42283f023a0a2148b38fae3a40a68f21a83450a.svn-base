@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="240dp"
+    android:background="@color/white"
+    android:orientation="vertical" >
+    <TextView 
+        style="@style/TitleStyle"
+        android:text="新建任务"
+       />
+    <!-- android:hint=""提示用户输入内容 -->
+	<EditText
+		android:layout_marginTop="10dp"
+		android:layout_marginLeft="5dp"
+	    android:id="@+id/et_add_taskname"
+	    android:hint="请输入任务名称:"
+	    android:inputType="text"
+	    android:layout_width="match_parent"
+	    android:layout_height="60dp"/>
+
+	<LinearLayout
+		android:layout_marginTop="10dp"
+		android:layout_width="match_parent"
+		android:layout_weight="1"
+	    android:layout_height="0dp">
+	    <Button 
+	        android:id="@+id/bt_submit"
+	        android:text="确认"
+			android:textColor="@color/white"
+			android:layout_marginLeft="20dp"
+			android:layout_marginBottom="30dp"
+			android:background="@color/bg_color_active"
+			android:textSize="18sp"
+	        android:layout_width="0dp"
+	       android:layout_weight="1"
+	    	android:layout_height="wrap_content"/>
+	    <Button
+			android:layout_marginLeft="20dp"
+			android:layout_marginRight="20dp"
+			android:layout_marginBottom="30dp"
+	        android:text="取消"
+			android:textColor="@color/white"
+	        android:id="@+id/bt_cancel"
+			android:background="@color/bg_color_active"
+			android:textSize="18sp"
+	        android:layout_width="0dp"
+	        android:layout_weight="1"
+	    	android:layout_height="wrap_content"/>
+	</LinearLayout>
+</LinearLayout>

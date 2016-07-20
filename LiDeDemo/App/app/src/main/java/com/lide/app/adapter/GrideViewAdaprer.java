@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * @author DaiJiCheng
  * @time 2016/7/18  11:09
- * @desc ${填充grideVeiw}
+ * @desc ${主功能界面中,填充grideVeiw}
  */
 public class GrideViewAdaprer extends BaseAdapter {
 

@@ -1,0 +1,53 @@
+package com.lide.app.model;
+
+import com.lide.app.MApplication;
+import com.lide.app.listener.OnSearchCheckTaskFinishListener;
+import com.lide.app.model.MInterface.ICheckTaskModel;
+import com.lide.app.service.DbService;
+import com.lubin.bean.CheckTask;
+
+import java.util.List;
+
+public class CheckTaskModelImpl implements ICheckTaskModel {
+
+    public DbService db ;
+
+    public CheckTaskModelImpl() {
+        db = DbService.getInstance(MApplication.getInstance());
+    }
+
+    @Override
+    public Boolean addCheckTask(String taskName) {
+        if (queryCheckTask(taskName).size()==0) {
+            CheckTask task = new CheckTask();
+            task.setName(taskName);
+            task.setCompete(false);
+            task.setNumber(0);
+
+            db.saveCheckTask(task);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public Boolean deleteCheckTask(String taskName) {
+
+        return false;
+    }
+
+    @Override
+    public Boolean updateCheckTaskName(String InvalidName, String newName) {
+
+        return false;
+    }
+
+    @Override
+    public void getAllCheckTask(OnSearchCheckTaskFinishListener listener) {
+        listener.OnSearchCheckTaskFinish(db.getAllCheckTask());
+    }
+
+    public  List<CheckTask> queryCheckTask(String keyword){
+        return db.queryCheckTask("name=?", keyword);
+    }
+}

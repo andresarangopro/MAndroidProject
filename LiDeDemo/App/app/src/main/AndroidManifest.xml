@@ -23,6 +23,8 @@
         <activity android:name=".ui.MainActivity" />
         //登录界面
         <activity android:name=".ui.LoginActivity" />
+        //盘点任务
+        <activity android:name=".ui.StockTakingActivity"/>
         <service
             android:name="com.lide.app.service.ScanService"
             android:enabled="true"

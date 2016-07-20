@@ -112,7 +112,7 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="3dp"
-        android:background="@drawable/toolbar_dropshadow"
+        android:background="@drawable/down_dropshadow"
         android:layout_below="@id/tb_login"/>
 
 

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="15dp"
+        android:background="@color/bg_color_base"/>
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:padding="6dp"
+        android:background="@color/bg_color_base">
+        <ImageView
+            android:id="@+id/iv_read_arror"
+            android:layout_marginLeft="10dp"
+            android:layout_width="wrap_content"
+            android:layout_height="22dp"
+            android:layout_centerVertical="true"
+            android:clickable="true"
+            android:src="@mipmap/arrow_left"/>
+        <TextView
+            android:id="@+id/tv_read_reading"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="20sp"
+            android:text="正在读取标签..."
+            android:textColor="@color/white"
+            android:layout_centerInParent="true"
+            />
+        <ImageView
+            android:id="@+id/iv_read_cloud"
+            android:layout_marginRight="10dp"
+            android:layout_width="wrap_content"
+            android:layout_height="22dp"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:src="@mipmap/cloud_upload"
+            android:clickable="true"/>
+    </RelativeLayout>
+
+    <com.lide.app.view.NoScrollViewPager
+        android:id="@+id/vp_stock"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        />
+
+</LinearLayout>

@@ -5,6 +5,15 @@ android {
     compileSdkVersion 22
     buildToolsVersion '23.0.2'
 
+    /*splits {
+        abi {
+            enable true
+            reset()
+            include 'x86', 'armeabi-v7a'
+            universalApk true
+        }
+    }*/
+
     defaultConfig {
         applicationId "com.lide.app"
         minSdkVersion 17
@@ -37,16 +46,17 @@ android {
     }
 }
 
-
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile files('libs/universal-image-loader-1.9.2_sources.jar')
+    compile files('libs/DeviceAPIver20160503.jar')
+    compile files('libs/volley.jar')
     compile 'com.android.support:appcompat-v7:22.2.1'
     compile 'com.android.support:support-v4:22.2.1'
-    compile 'com.android.support:design:22.2.0'
+    compile 'com.android.support:design:22.2.1'
+    compile 'com.android.support:cardview-v7:22.2.1'
     compile 'com.jakewharton:butterknife:8.1.0'
     apt 'com.jakewharton:butterknife-compiler:8.1.0'
-    compile 'de.greenrobot:greendao:2.0.0'
-    compile files('libs/DeviceAPIver20160503.jar')
     compile 'com.android.support:recyclerview-v7:22.2.1'
+    compile 'de.greenrobot:greendao:2.0.0'
 }

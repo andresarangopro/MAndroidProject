@@ -52,7 +52,6 @@ public class SetFragment extends FragmentBase {
         super.onActivityCreated(savedInstanceState);
 
         mContext = (MainActivity) getActivity();
-
         BtSetFre.setOnClickListener(new SetFreOnclickListener());
         BtGetFre.setOnClickListener(new GetFreOnclickListener());
         btnWorkWait.setOnClickListener(new SetPWMOnclickListener());

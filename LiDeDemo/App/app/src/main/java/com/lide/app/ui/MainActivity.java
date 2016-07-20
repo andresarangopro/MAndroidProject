@@ -106,10 +106,11 @@ public class MainActivity extends AppCompatActivity {
         fragments.add(new ReadTagFragment());
         fragments.add(new KillTagFragment());
         fragments.add(new SetFragment());
-        fragments.add(new CheckTaskFragment());
+       //fragments.add(new TaskFragment());
+       fragments.add(new CheckTaskFragment());
         //主功能选择界面
         fragments.add(new ChannelFragment());
-        viewPagerAdapter = new ViewPagerAdapter(getSupportFragmentManager(), fragments);
+        viewPagerAdapter = new ViewPagerAdapter(getSupportFragmentManager(), fragments);;
         vpMain.setAdapter(viewPagerAdapter);
     }
 

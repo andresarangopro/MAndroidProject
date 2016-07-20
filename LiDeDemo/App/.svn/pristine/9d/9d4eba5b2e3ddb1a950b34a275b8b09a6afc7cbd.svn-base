@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="10dp"
+        android:background="@color/stock_read_background_small"/>
+  <RelativeLayout
+      android:layout_width="match_parent"
+      android:layout_height="60dp"
+      android:padding="6dp"
+      android:background="@color/stock_read_background_small">
+      <ImageView
+          android:id="@+id/iv_read_back"
+          android:layout_width="wrap_content"
+          android:layout_height="28dp"
+          android:layout_centerVertical="true"
+          android:src="@mipmap/arrow_left"/>
+      <TextView
+          android:id="@+id/tv_read_reading"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:textSize="22sp"
+          android:text="正在读取标签..."
+          android:textColor="@color/white"
+          android:layout_centerInParent="true"
+         />
+      <ImageView
+          android:id="@+id/iv_read_upload"
+          android:layout_width="wrap_content"
+          android:layout_height="28dp"
+          android:layout_alignParentRight="true"
+          android:layout_centerVertical="true"
+          android:src="@mipmap/cloud_upload"/>
+  </RelativeLayout>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="240dp"
+        android:background="@color/stock_read_background_big">
+
+        <RelativeLayout
+            android:layout_marginTop="10dp"
+            android:id="@+id/rl_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:background="@null"
+                android:src="@mipmap/quan"
+                android:id="@+id/imageView"/>
+            <TextView
+                android:id="@+id/tv_read_number"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:textColor="#777474"
+                android:textSize="23sp"
+                android:textStyle="bold"
+                android:text="33"/>
+        </RelativeLayout>
+        <RelativeLayout
+            android:layout_marginTop="10dp"
+            android:padding="6dp"
+            android:gravity="center_vertical"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/rl_content"
+            android:layout_centerHorizontal="true"
+            android:background="@drawable/progress_buttom_bg"
+           >
+            <ProgressBar
+               android:layout_marginBottom="6dp"
+                android:id="@+id/progressBar1"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_height="wrap_content"
+                android:layout_width="266dp"
+                android:progressDrawable="@drawable/pb_layerlist_bg"
+                android:progress="30"
+                android:max="100"
+
+                />
+
+        </RelativeLayout>
+
+
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="10dp"
+            android:alpha="0.01"
+            android:background="@drawable/toolbar_dropshadow"/>
+
+
+    </RelativeLayout>
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="8dp"
+        android:background="@color/stock_read_shadow_big"/>
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="#fff"
+        android:layout_weight="1"
+        />
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:background="@color/stock_read_shadow_big"/>
+    <LinearLayout
+        android:padding="5dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="bottom"
+        android:background="@color/stock_read_background_small"
+       >
+        <Button
+            android:id="@+id/bt_read_open_close"
+            android:gravity="center"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="22sp"
+            android:background="@null"
+            android:textColor="@color/white"
+            android:text="关闭读写器"/>
+    </LinearLayout>
+
+
+
+</LinearLayout>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android" >
+    <!-- layer-list 存放多个层级的背景  最底层的背景应该放在最上面 -->
+	<item android:drawable="@drawable/progress_bar_bg" 
+	    android:id="@android:id/background" />
+	<item android:drawable="@drawable/progress_bar_selected_bg" 
+	    android:id="@android:id/progress" />
+</layer-list>

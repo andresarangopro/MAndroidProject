@@ -2,7 +2,25 @@
               android:layout_width="match_parent"
               android:layout_height="match_parent"
               android:orientation="vertical"
+
     >
+    <EditText
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="5dp"
+        android:id="@+id/et_check_taskname"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/login_control_height"
+        android:background="@drawable/edit_login"
+        android:drawableLeft="@mipmap/fangdajing"
+        android:drawablePadding="10dp"
+        android:hint="@string/check_task_name_hint"
+        android:focusable="true"
+        android:inputType="text"
+        android:padding="10dp"
+        android:textColorHint="#ffdddddd"
+        android:textSize="15sp" />
     <android.support.v7.widget.RecyclerView
         android:id="@+id/rv_check_task"
         android:background="#EEEEEE"
@@ -17,9 +35,11 @@
         android:id="@+id/btn_check_task_add"
         android:layout_alignParentBottom="true"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="30dp"
-        android:background="@drawable/btn_yes_no"
+        android:layout_height="60dp"
+        android:textSize="26sp"
+        android:textColor="@color/white"
+        android:background="@color/bg_color_active"
+
         android:text="添加任务"/>
 
 </LinearLayout>

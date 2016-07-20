@@ -18,4 +18,6 @@
     <string name="function">功能</string>
     <string name="isOpen">中心界面</string>
     <string name="isClose">菜单</string>
+    <string name="check_task_name_hint">请输入任务编号</string>
+
 </resources>
