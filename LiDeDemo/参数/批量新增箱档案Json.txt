@@ -1,0 +1,11 @@
+{
+ "cazes"          : [
+  {
+   "code"           : "",
+   "name"           : "",
+   "description"    : "",
+   "disable"        : false,
+   "sourceCazeCode" : ""
+  }
+ ]
+}

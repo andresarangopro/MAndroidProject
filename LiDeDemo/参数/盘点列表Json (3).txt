@@ -1,0 +1,14 @@
+{
+ "orderByMethod"          : "ASC",
+ "isPageable"             : false,
+ "code"                   : "",
+ "status"                 : [
+  ""
+ ],
+ "takeStockTypeId"        : "",
+ "takeStockTypeCode"      : "",
+ "warehouseCode"          : "WH001",
+ "takeStockMode"          : "",
+ "sourceOrderCode"        : "",
+ "sourceOrderType"        : ""
+}

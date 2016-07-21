@@ -1,0 +1,6 @@
+{
+ "taskCode"     : "",
+ "locationId"   : "",
+ "deviceId"     : "",
+ "propertyType" : { }
+}

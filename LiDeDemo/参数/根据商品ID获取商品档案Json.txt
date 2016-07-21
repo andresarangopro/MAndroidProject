@@ -1,0 +1,4 @@
+{
+ "loadImage"                : false,
+ "loadCustomPropertieValue" : false
+}

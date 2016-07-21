@@ -1,0 +1,11 @@
+{
+ "barcodes" : [
+  {
+   "barcode"  : "",
+   "qty"      : 0.00
+  }
+ ],
+ "tagList"  : [
+  ""
+ ]
+}

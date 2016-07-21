@@ -1,0 +1,11 @@
+{
+ "orderByField"   : "",
+ "orderByMethod"  : "",
+ "isPageable"     : false,
+ "currentPage"    : 0,
+ "recordsPerPage" : 0,
+ "taskId"         : "",
+ "deviceId"       : "",
+ "locationId"     : "",
+ "employeeId"     : ""
+}
