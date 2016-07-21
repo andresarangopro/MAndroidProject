@@ -1,7 +1,0 @@
-{
- "businessModuleCode" : "",
- "warehouseCode"      : "",
- "accountType"        : "",
- "username"           : "",
- "password"           : ""
-}
