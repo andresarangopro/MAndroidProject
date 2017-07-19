@@ -1,0 +1,243 @@
+package com.lide.app.ui.inbound.LS;
+
+import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.view.animation.LinearInterpolator;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import com.google.gson.internal.LinkedTreeMap;
+import com.lide.app.R;
+import com.lide.app.listener.OnFinishListener;
+import com.lide.app.persistence.util.DBOperator;
+import com.lide.app.persistence.util.SoundUtils;
+import com.lide.app.presenter.ScanPresenter;
+import com.lide.app.ui.FragmentBase;
+import com.lide.app.ui.VInterface.IDataFragmentView;
+import com.lide.app.ui.inbound.InboundTransaction;
+import com.lubin.bean.InBoundOperate;
+import com.lubin.bean.InBoundOrder;
+import com.lubin.dao.InBoundOperateDao;
+import com.lubin.dao.InBoundOrderDao;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
+/**
+ * Created by lubin on 2016/11/30.
+ */
+
+public class ScanningRFIDFragment extends FragmentBase implements IDataFragmentView<List<LinkedTreeMap>> {
+
+    @BindView(R.id.scan_sum_title)
+    TextView scanSumTitle;
+    @BindView(R.id.scan_rotate)
+    ImageView scanRotate;
+    @BindView(R.id.sum_num)
+    TextView sumNum;
+    @BindView(R.id.scan_state)
+    TextView scanState;
+    @BindView(R.id.btn_scan_result)
+    Button btnScanResult;
+
+    private View mView;
+    private ScanPresenter scanPresenter;
+    private Animation anim;
+    private int order;
+    private Timer mTimer;
+    private InboundActivity mActivity;
+    private DBOperator<InBoundOrderDao, InBoundOrder> orderDBOperator;
+    private DBOperator<InBoundOperateDao, InBoundOperate> operateDBOperator;
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        mView = inflater.inflate(R.layout.fragment_scan_rfid, container, false);
+        ButterKnife.bind(this, mView);
+        initData();
+        initTask();
+        initView();
+        return mView;
+    }
+
+    @Override
+    public void setUserVisibleHint(boolean isVisibleToUser) {
+        super.setUserVisibleHint(isVisibleToUser);
+        if (isVisibleToUser) {
+            initScanPresenter();
+        } else {
+            if (scanPresenter == null) return;
+            if (scanState.getText().toString().equals("点击结束"))
+                readOrClose();
+            scanPresenter.removeListener();
+        }
+    }
+
+    private void initData() {
+        order = 0;
+        anim = AnimationUtils.loadAnimation(getActivity(), R.anim.san_anim);
+        anim.setInterpolator(new LinearInterpolator());
+        anim.setFillAfter(true);
+        anim.setFillBefore(false);
+        anim.setFillEnabled(false);
+
+        mActivity = ((InboundActivity) getActivity());
+        orderDBOperator = InboundTransaction.getOrderDBOperator();
+        operateDBOperator = InboundTransaction.getOperateDBOperator();
+    }
+
+    private void initTask() {
+        mTimer = new Timer();
+        mTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if (order > 10) {
+                    setAnimDuration(1000);
+                } else if (order >= 0 && order <= 10) {
+                    setAnimDuration(5000);
+                }
+            }
+        }, 0, 500);
+    }
+
+    private void initView() {
+        if (mActivity.orderId != 0) {
+            List<InBoundOperate> list = operateDBOperator.getItemsByParameters(null
+                    , InBoundOperateDao.Properties.InBoundOrderId.eq(mActivity.orderId)
+                    , InBoundOperateDao.Properties.Epc.isNotNull());
+            scanSumTitle.setText("单据数: " + String.valueOf(list.size()));
+        } else {
+            List<InBoundOperate> list = operateDBOperator.getItemsByParameters(null
+                    , InBoundOperateDao.Properties.InBoundCaseId.in(mActivity.getCasesIdList())
+                    , InBoundOperateDao.Properties.Epc.isNotNull());
+            scanSumTitle.setText("单据数: " + String.valueOf(list.size()));
+        }
+    }
+
+    @NonNull
+    private List<String> refresh() {
+        List<String> datas = new ArrayList<>();
+        List<InBoundOperate> operates;
+        if (mActivity.orderId != 0) {
+            operates = operateDBOperator.getItemsByParameters(null
+                    , InBoundOperateDao.Properties.InBoundOrderId.eq(mActivity.orderId)
+                    , InBoundOperateDao.Properties.Epc.isNotNull()
+                    , InBoundOperateDao.Properties.OperateQty.eq(1));
+        } else {
+            operates = operateDBOperator.getItemsByParameters(null
+                    , InBoundOperateDao.Properties.InBoundCaseId.in(mActivity.getCasesIdList())
+                    , InBoundOperateDao.Properties.Epc.isNotNull()
+                    , InBoundOperateDao.Properties.OperateQty.eq(1));
+        }
+
+        for (InBoundOperate inBoundOperate : operates) {
+            datas.add(inBoundOperate.getEpc());
+        }
+
+        return datas;
+    }
+
+    private void initScanPresenter() {
+        List<String> datas = refresh();
+
+        scanPresenter = new ScanPresenter(this);
+        scanPresenter.initData();
+        scanPresenter.setMode(1);
+        scanPresenter.initMap(datas);
+        scanPresenter.setCurrentSetting(ScanPresenter.Setting.stockRead);
+        scanPresenter.setListenerProtectModel(new OnFinishListener() {
+            @Override
+            public void OnFinish(String data) {
+                order++;
+                if (data.isEmpty()) {
+                    return;
+                } else {
+                    findOperate(data);
+                }
+            }
+        });
+        sumNum.setText(String.valueOf(datas.size()));
+    }
+
+    private void setAnimDuration(int durationMillis) {
+        if (anim.getDuration() != durationMillis) {
+            anim.setDuration(durationMillis);
+            anim.reset();
+        }
+        order = 0;
+    }
+
+    public void readOrClose() {
+        if (scanState.getText().toString().equals("点击开始")) {
+            scanRotate.setAnimation(anim);
+            scanRotate.setVisibility(View.VISIBLE);
+            btnScanResult.setEnabled(false);
+            btnScanResult.setBackground(greyBackground);
+            mActivity.setViewEnabled(false);
+            scanState.setText("点击结束");
+            scanPresenter.startReadRfid();
+        } else {
+            scanRotate.setVisibility(View.INVISIBLE);
+            scanRotate.clearAnimation();
+            btnScanResult.setEnabled(true);
+            btnScanResult.setBackground(commonBackground);
+            mActivity.setViewEnabled(true);
+            scanState.setText("点击开始");
+            scanPresenter.stopReadRfid();
+            mActivity.recount();
+        }
+    }
+
+    private void findOperate(String data) {
+        List<InBoundOperate> operates;
+        if (mActivity.orderId != 0) {
+            operates = operateDBOperator.getItemsByParameters(null
+                    , InBoundOperateDao.Properties.InBoundOrderId.eq(mActivity.orderId)
+                    , InBoundOperateDao.Properties.Epc.eq(data)
+                    , InBoundOperateDao.Properties.OperateQty.eq(0));
+        } else {
+            operates = operateDBOperator.getItemsByParameters(null
+                    , InBoundOperateDao.Properties.InBoundCaseId.in(mActivity.getCasesIdList())
+                    , InBoundOperateDao.Properties.Epc.eq(data)
+                    , InBoundOperateDao.Properties.OperateQty.eq(0));
+        }
+        if (operates.size() == 0) return;
+        InBoundOperate operate = operates.get(0);
+        operate.setOperateQty(1);
+        operate.update();
+
+        SoundUtils.play(1);
+
+        sumNum.setText(String.valueOf(Integer.parseInt(sumNum.getText().toString()) + 1));
+    }
+
+    @Override
+    public void ShowData(List<LinkedTreeMap> linkedTreeMaps) {
+
+    }
+
+    @OnClick({R.id.iv_close_open, R.id.btn_scan_result})
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.iv_close_open:
+                readOrClose();
+                break;
+            case R.id.btn_scan_result:
+                mActivity.setCurrentFragment(5);
+                break;
+        }
+    }
+}

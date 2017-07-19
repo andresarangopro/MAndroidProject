@@ -1,0 +1,60 @@
+package com.lubin.chj.modle.addedModel;
+
+import android.util.Log;
+
+import com.lubin.chj.Listener.OnNetReqFinishListener;
+import com.lubin.chj.bean.jsonToBean.GetMyPzhListBean;
+import com.lubin.chj.modle.MInterface.addInterface.IGetMyPzhList;
+import com.lubin.chj.utils.GlobleConfig;
+import com.lubin.chj.utils.SoapUtil;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * @author DaiJiCheng
+ * @time 2017/1/22  9:13
+ * @desc ${拣货时，用于获取属于用户自己的配货单列表}
+ */
+public class GetMyPzhListModelImpl implements IGetMyPzhList{
+
+   private GetMyPzhListBean mGetMyPzhListBean;
+   //柜位查询
+    @Override
+    public void GetMyPzhList(Map<String, Object> map, final OnNetReqFinishListener listener) {
+        SoapUtil.GetWebServiceData(map, new OnNetReqFinishListener() {
+            @Override
+            public void OnNetReqFinish(Map<String, Object> hashMap) {
+
+                Object result = hashMap.get("result");
+                Log.d("test","OnNetReqFinish-------->>>__>>" + result.toString());
+                if (result != null) {
+                    mGetMyPzhListBean = mGetMyPzhListBean.objectFromData(result.toString());
+                    hashMap.put("returnCode", mGetMyPzhListBean.getReturnCode());
+                    hashMap.put("returnMsg", mGetMyPzhListBean.getReturnMsg());
+                } else {
+                    hashMap.put("returnCode", "9999");
+                    hashMap.put("returnMsg", "网络请求失败");
+                }
+                listener.OnNetReqFinish(hashMap);
+            }
+        });
+    }
+    @Override
+    public Map<String, Object> getHashMapForGetMyPzhList(String pzlx,String orderType) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("pzlx", pzlx);
+        map.put("orderType", orderType);
+        map.put("rightID", GlobleConfig.rightId);
+        map.put("doMethod", "GetMyPzhList");
+        return map;
+    }
+
+    @Override
+    public List<GetMyPzhListBean.ListBean> GetMyPzhListBean() {
+        return mGetMyPzhListBean.getList();
+    }
+
+
+}

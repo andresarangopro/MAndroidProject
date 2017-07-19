@@ -1,0 +1,56 @@
+package com.lide.app.presenter.takeStock;
+
+import com.lide.app.config.Configs;
+import com.lide.app.listener.OnLoadFinishListener;
+import com.lide.app.model.MInterface.ITakeStockOrderModel;
+import com.lide.app.model.TakeStockOrderModelImpl;
+import com.lide.app.presenter.PInterface.ITakeStockOrderPresenter;
+import com.lide.app.ui.VInterface.ITakeStockView;
+import com.lubin.bean.Order;
+
+import java.util.Map;
+
+public class TakeStockPresenterImpl implements ITakeStockOrderPresenter {
+
+    ITakeStockView view;
+    ITakeStockOrderModel model;
+
+    public TakeStockPresenterImpl(ITakeStockView view) {
+        this.view = view;
+        this.model = new TakeStockOrderModelImpl();
+
+    }
+
+    @Override
+    public void getTakeStockOrders() {
+        view.startProgressDialog("加载中...");
+        model.getTakeStockOrders(model.getHashMapForOrders(), new OnLoadFinishListener() {
+            @Override
+            public void OnLoadFinish(Map<String, String> map) {
+                if (map.get("statusCode").equals("200")) {
+                    view.ShowData(model.getOrders(map.get("result")));
+                    view.stopProgressDialog(null);
+                } else {
+                    view.showDialog(map.get("result"));
+                    view.stopProgressDialog(null);
+                }
+            }
+        });
+    }
+
+    @Override
+    public void bindCheckTask(Order order) {
+        model.bindCheckTask(model.getHashMapForBing(order), new OnLoadFinishListener() {
+            @Override
+            public void OnLoadFinish(Map<String, String> map) {
+                if (map.get("statusCode").equals("200")) {
+                    view.startNewActivity(null);
+                    view.showFragment(Configs.READ_FRAGMENT);
+                } else {
+                    view.showDialog(map.get("result"));
+                }
+            }
+        });
+    }
+
+}

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <android.support.design.widget.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        app:elevation="5dp">
+
+        <android.support.v7.widget.Toolbar
+            android:id="@+id/tb_epc"
+            style="@style/Widget.AppCompat.Toolbar.Button.Navigation"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/common_title_height"
+            android:fitsSystemWindows="true"
+            android:minHeight="@dimen/abc_action_bar_default_height_material"
+            app:elevation="3dp"
+            app:popupTheme="@style/Theme.ToolBar.Base">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="唯一码"
+                android:textColor="@color/white"
+                android:textSize="@dimen/text_size_big" />
+        </android.support.v7.widget.Toolbar>
+
+
+    </android.support.design.widget.AppBarLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:layout_below="@+id/title_main"
+        android:background="@drawable/down_dropshadow" />
+
+    <EditText
+        android:id="@+id/et_search_epc"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/common_button_height"
+        android:layout_marginBottom="5dp"
+        android:layout_marginLeft="5dp"
+        android:layout_marginRight="5dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/edit_common"
+        android:drawableLeft="@mipmap/fangdajing"
+        android:drawablePadding="10dp"
+        android:hint="请输入查询信息"
+        android:inputType="number"
+        android:padding="10dp"
+        android:textColorHint="#ffdddddd"
+        android:textSize="15sp"
+        android:visibility="gone" />
+
+    <ListView
+        android:id="@+id/lv_epc"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+</LinearLayout>

@@ -1,0 +1,11 @@
+package com.lubin.chj.utils;
+
+/**
+ * @author DaiJiCheng
+ * @time 2016/9/21  18:02
+ * @desc ${TODD}
+ */
+public class GlobleConfig {
+    //public static String rightId =/* "a268fc80-030f-43af-9e3c-752362122171";*/"50FCA2F2-8F04-40A7-A152-239D5916F349";
+    public static String rightId;
+}

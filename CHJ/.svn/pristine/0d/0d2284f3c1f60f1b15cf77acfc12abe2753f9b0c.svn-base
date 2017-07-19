@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_marginTop="60dp"
+        android:orientation="vertical">
+
+        <RadioGroup
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="10dp">
+
+            <RadioButton
+                android:id="@+id/rb_pick_certificate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="采购单拣货"
+                android:textColor="@color/line_text_color"
+                android:textSize="18sp" />
+
+            <RadioButton
+                android:id="@+id/rb_pick_direct"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="直接拣货"
+                android:textColor="@color/line_text_color"
+                android:textSize="18sp" />
+
+            <RadioButton
+                android:id="@+id/rb_pick_invoice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="配货单拣货"
+                android:textColor="@color/line_text_color"
+                android:textSize="18sp" />
+        </RadioGroup>
+
+        <LinearLayout
+            android:id="@+id/ll_edit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="10dp">
+
+            <TextView
+                android:id="@+id/tv_label_for_edit"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:paddingLeft="10dp"
+                android:text="凭  证  号 :"
+                android:textColor="@color/line_text_color"
+                android:textSize="16sp" />
+
+            <EditText
+                android:id="@+id/et_picking_main"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="5dp"
+                android:layout_weight="2"
+                android:background="@drawable/edit_common"
+                android:padding="5dp" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btn_pick"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/button_line_active"
+            android:text="确定"
+            android:textColor="@drawable/button_line_text" />
+    </LinearLayout>
+</LinearLayout>

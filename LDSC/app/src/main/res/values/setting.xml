@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="uhf_msg_read_tag_fail">读取标签号失败</string>
+    <string name="uhf_msg_addr_not_null">地址不能为空</string>
+    <string name="uhf_msg_addr_must_decimal">地址必须为十进制数据</string>
+    <string name="uhf_msg_addr_must_len8">访问密码的长度必须为8位</string>
+    <string name="uhf_msg_write_must_not_null">写入数据不能为空</string>
+    <string name="uhf_msg_write_must_len4">写入数据的字符串长度必须为4位</string>
+    <string name="uhf_msg_tag_must_not_null">标签号不能为空</string>
+    <string name="uhf_msg_write_succ">写入数据成功</string>
+    <string name="uhf_msg_write_fail">写入数据失败</string>
+    <string name="uhf_msg_len_not_null">长度不能为空</string>
+    <string name="uhf_msg_len_must_decimal">长度必须为十进制数据</string>
+    <string name="uhf_msg_write_must_len4x">写入数据的字符串长度必须为4的倍数</string>
+    <string name="uhf_msg_read_data_fail">读取数据失败</string>
+
+    <string name="uhf_msg_inventory_fail">识别失败</string>
+    <string name="uhf_msg_inventory_stop_fail">停止识别标签失败</string>
+    <string name="uhf_msg_inventory_open_fail">开启识别标签失败</string>
+
+    <string name="uhf_msg_set_frequency_fail">设置频率失败</string>
+    <string name="uhf_msg_set_frequency_succ">设置频率成功</string>
+
+    <string name="uhf_msg_set_pwm_succ">设置空占比成功</string>
+    <string name="uhf_msg_set_pwm_fail">设置空占比失败</string>
+
+    <string name="uhf_msg_set_power_succ">设置功率成功</string>
+    <string name="uhf_msg_set_power_fail">设置功率失败</string>
+
+    <string name="uhf_msg_set_protocol_succ">设置功率成功</string>
+    <string name="uhf_msg_set_protocol_fail">设置功率失败</string>
+
+    <string name="uhf_msg_set_succ">设置成功</string>
+    <string name="uhf_msg_set_fail">设置失败</string>
+
+    <string name="uhf_msg_set_frequency_mode_succ">设置工作模式成功</string>
+    <string name="uhf_msg_set_frequency_mode_fail">设置工作模式失败</string>
+</resources>

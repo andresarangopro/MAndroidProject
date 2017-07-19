@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingLeft="5dp"
+        android:paddingRight="5dp"
+        android:paddingTop="5dp">
+
+        <CheckBox
+            android:id="@+id/cb_all"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="全部" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginLeft="10dp"
+            android:gravity="left"
+            android:text="调整货品信息"
+            android:textColor="@drawable/button_line_text"
+            android:textSize="16sp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="right"
+            android:text="数量 :  "
+            android:textColor="@color/lide_num_blue"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/tv_adjust_succeed_num"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textColor="@drawable/button_line_text"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+
+    <ListView
+        android:id="@+id/lv_adjust"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_margin="5dp"
+        android:layout_weight="1"
+        android:background="@drawable/list_view_line" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="55dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingLeft="5dp"
+        android:paddingRight="5dp">
+
+        <Button
+            android:id="@+id/bt_adjust_store"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_weight="1"
+            android:background="@drawable/button_line_active"
+            android:text="存放"
+            android:textColor="@drawable/button_line_text"
+            android:textSize="16sp" />
+
+        <Button
+            android:id="@+id/bt_adjust_counter_query"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_marginLeft="5dp"
+            android:layout_weight="1"
+            android:background="@drawable/button_line_active"
+            android:text="柜位查询"
+            android:textColor="@drawable/button_line_text"
+            android:textSize="16sp" />
+
+        <Button
+            android:id="@+id/bt_adjust_clear"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_marginLeft="5dp"
+            android:layout_weight="1"
+            android:background="@drawable/button_line_active"
+            android:text="清除"
+            android:textColor="@drawable/button_line_text"
+            android:textSize="16sp" />
+    </LinearLayout>
+
+</LinearLayout>

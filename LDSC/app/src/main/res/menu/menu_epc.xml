@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+
+    <item
+        android:id="@+id/action_synchronization"
+        android:icon="@mipmap/ic_popup_sync_1"
+        android:title="同步"
+        />
+
+    <item
+        android:id="@+id/menu_diff"
+        android:icon="@drawable/abc_ic_menu_moreoverflow_mtrl_alpha"
+        android:title="展示模式"
+        >
+        <menu>
+            <group android:id="@+id/more_model">
+
+                <item
+                    android:id="@+id/action_search"
+                    android:icon="@drawable/abc_ic_search_api_mtrl_alpha"
+                    android:title="搜索"
+                    />
+
+                <!--<item
+                    android:id="@+id/action_all"
+                    android:title="全部"
+                    android:titleCondensed="ALL"
+                    />
+                <item
+                    android:id="@+id/action_unusual"
+                    android:title="有异常"
+                    android:titleCondensed="UNUSUAL"
+                    />
+                <item
+                    android:id="@+id/action_normal"
+                    android:title="无异常"
+                    android:titleCondensed="NORMAL"
+                     />
+                <item
+                    android:id="@+id/action_export"
+                    android:title="导出"
+                    android:titleCondensed="NORMAL"
+                     />-->
+            </group>
+        </menu>
+    </item>
+
+</menu>

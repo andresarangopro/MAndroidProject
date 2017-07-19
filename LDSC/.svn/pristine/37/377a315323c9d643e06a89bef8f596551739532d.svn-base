@@ -1,0 +1,39 @@
+package com.lide.app.presenter.search;
+
+import com.lide.app.listener.OnLoadFinishListener;
+import com.lide.app.model.MInterface.IQueryModel;
+import com.lide.app.model.QueryModelImpl;
+import com.lide.app.presenter.PInterface.ISearchSkuListPresenter;
+import com.lide.app.ui.VInterface.IDataFragmentView;
+
+import java.util.Map;
+
+public class SearchSkuListListPresenterImpl implements ISearchSkuListPresenter {
+
+    IDataFragmentView view;
+    IQueryModel model;
+
+    public SearchSkuListListPresenterImpl(IDataFragmentView view) {
+        this.view = view;
+        model = new QueryModelImpl();
+    }
+
+    //模糊查询sku
+    @Override
+    public void getSearchSku(String search) {
+        if (!model.hasNextSkuList()) view.showDialog("没有数据啦~");
+        view.startProgressDialog("下载中...");
+        model.querySkuList("%" + search + "%", new OnLoadFinishListener() {
+            @Override
+            public void OnLoadFinish(Map<String, String> map) {
+                if (map.get("statusCode").equals("200")) {
+                    view.ShowData(model.resultToList(map.get("result")));
+                } else {
+                    view.showDialog(map.get("result"));
+                }
+                view.stopProgressDialog(null);
+            }
+        });
+    }
+
+}

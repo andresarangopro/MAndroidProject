@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TableRow xmlns:android="http://schemas.android.com/apk/res/android"
+          android:id="@+id/pick_direct_view"
+          android:layout_width="match_parent"
+          android:layout_height="wrap_content"
+          android:paddingBottom="5dp"
+          android:paddingTop="5dp">
+
+    <RadioButton
+        android:id="@+id/radio_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="3dp"
+        android:background="@drawable/radio"
+        android:button="@null"
+        android:text=""/>
+
+    <TextView
+        android:id="@+id/pick_direct_material"
+        android:layout_width="1dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:text="物料号"
+        android:textColor="@android:color/black"/>
+
+    <TextView
+        android:id="@+id/pick_direct_batch"
+        android:layout_width="1dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:text="批次"
+        android:textColor="@android:color/black"/>
+
+    <TextView
+        android:id="@+id/pick_direct_store_counters"
+        android:layout_width="1dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:text="存放柜位"
+        android:textColor="@android:color/black"/>
+
+    <TextView
+        android:id="@+id/pick_direct_area"
+        android:layout_width="1dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:text="区域"
+        android:textColor="@android:color/black"/>
+</TableRow>

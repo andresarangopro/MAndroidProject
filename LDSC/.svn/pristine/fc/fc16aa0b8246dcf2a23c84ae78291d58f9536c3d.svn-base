@@ -1,0 +1,18 @@
+package com.lide.app.ui.VInterface;
+
+import com.lubin.bean.SkuCollect;
+
+import java.util.List;
+
+/**
+ * Created by lubin on 2016/10/20.
+ */
+
+public interface IUploadSkuCollectView extends IDataView, IView {
+
+    void startProgressDialog(final String text);
+
+    void stopProgressDialog(final String result);
+
+    void showAllSkuCollect(List<SkuCollect> skuCollects);
+}

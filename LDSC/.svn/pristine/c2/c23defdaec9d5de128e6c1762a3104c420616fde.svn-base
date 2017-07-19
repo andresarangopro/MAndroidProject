@@ -1,0 +1,174 @@
+package com.lide.app.ui.takeStock.UR;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.TextView;
+
+import com.lide.app.R;
+import com.lide.app.adapter.ViewPagerAdapter;
+import com.lide.app.config.Configs;
+import com.lide.app.persistence.util.DBOperator;
+import com.lide.app.persistence.util.Utils;
+import com.lide.app.persistence.view.LazyViewPager;
+import com.lide.app.persistence.view.NoScrollViewPager;
+import com.lide.app.presenter.takeStock.ConfigTakeStockTackPresenterImpl;
+import com.lide.app.ui.BaseActivity;
+import com.lide.app.ui.FragmentBase;
+import com.lide.app.ui.LoginActivity;
+import com.lide.app.ui.VInterface.IDataFragmentView;
+import com.lide.app.ui.takeStock.TakeStockTransaction;
+import com.lubin.bean.TakeStockEpcCollect;
+import com.lubin.bean.TakeStockOrder;
+import com.lubin.bean.TakeStockSkuCollect;
+import com.lubin.bean.TakeStockTask;
+import com.lubin.dao.TakeStockEpcCollectDao;
+import com.lubin.dao.TakeStockOrderDao;
+import com.lubin.dao.TakeStockSkuCollectDao;
+import com.lubin.dao.TakeStockTaskDao;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+
+/**
+ * Created by HKR on 2017/2/21.
+ */
+
+public class StockTaskDetailsActivity extends BaseActivity implements IDataFragmentView<String> {
+
+    @BindView(R.id.tb_main)
+    Toolbar tbMain;
+    @BindView(R.id.vp_main)
+    NoScrollViewPager vpMain;
+
+    @BindView(R.id.tv_tb)
+    TextView tvTb;
+    private List<FragmentBase> mfragments;
+    private ViewPagerAdapter viewPagerAdapter;
+    ConfigTakeStockTackPresenterImpl mPresenter;
+
+    private DBOperator<TakeStockOrderDao, TakeStockOrder> orderDBOperator;
+    private DBOperator<TakeStockTaskDao, TakeStockTask> taskDBOperator;
+    public DBOperator<TakeStockSkuCollectDao, TakeStockSkuCollect> skuDBOperator;
+    public DBOperator<TakeStockEpcCollectDao, TakeStockEpcCollect> epcDBOperator;
+    public int skuNum = 0;
+    public int epcNum = 0;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        orderDBOperator = TakeStockTransaction.getOrderDBOperator();
+        taskDBOperator = TakeStockTransaction.getTaskDBOperator();
+        skuDBOperator = TakeStockTransaction.getSkuDBOperator();
+        epcDBOperator = TakeStockTransaction.getEpcDBOperator();
+        mPresenter = new ConfigTakeStockTackPresenterImpl(this);
+        setContentView(R.layout.activity_main);
+        ButterKnife.bind(this);
+        initView();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        tbMain.setTitle(null);
+        tvTb.setText("明细");
+        init();
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_accomplish, menu);
+        return true;
+    }
+
+    public TakeStockTask mCheckTask = null;
+    public TakeStockOrder mTakeStockOrder = null;
+
+    public void init() {
+        //唯一码
+        List<TakeStockEpcCollect> epcList = epcDBOperator.getItemByParameter(TakeStockEpcCollectDao.Properties.TakeStockTask, mCheckTask.getName());
+        //条码
+        List<TakeStockSkuCollect> skuList = skuDBOperator.getItemByParameter(TakeStockSkuCollectDao.Properties.TaskCode, mCheckTask.getName());
+        epcNum = epcList.size();
+        for (Iterator<TakeStockSkuCollect> iterator = skuList.iterator(); iterator.hasNext(); ) {
+            TakeStockSkuCollect next = iterator.next();
+            skuNum = skuNum + next.getNum();
+        }
+    }
+
+    private void initView() {
+        String checkTaskCodeID = getIntent().getStringExtra("checkTask");
+        List<TakeStockTask> takeStockTasks = taskDBOperator.getItemByParameter(TakeStockTaskDao.Properties.CodeId, checkTaskCodeID);
+        if (takeStockTasks != null && takeStockTasks.size() > 0) {
+            mCheckTask = takeStockTasks.get(0);
+        }
+
+        List<TakeStockOrder> takeStockOrders = orderDBOperator.getItemsById(TakeStockOrderDao.Properties.Id, mCheckTask.getOrderId());
+        if (takeStockOrders != null && takeStockOrders.size() > 0) {
+            mTakeStockOrder = takeStockOrders.get(0);
+        }
+
+        setSupportActionBar(tbMain);
+        tbMain.setNavigationIcon(R.mipmap.back_login);
+        tbMain.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
+        tbMain.setOnMenuItemClickListener(new Toolbar.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                switch (item.getItemId()) {
+                    case R.id.mangenment_accomplish: //完成
+                        if (Utils.getCurrentUser() != null) {
+                            if (mCheckTask.getRealPoint() == (epcNum + skuNum))
+                                mPresenter.getConfigTakeStockTack(mTakeStockOrder.getTakeStockId(), mCheckTask.getCodeId());
+                            else showDialog("清点数必须等于RFID数+条码数");
+                        } else {
+                            //未登录
+                            Intent login = new Intent(getApplication(), LoginActivity.class);
+                            login.putExtra("isAtNet", true);
+                            startActivityForResult(login, Configs.LOGIN);
+                        }
+                        break;
+                }
+                return false;
+            }
+        });
+        mfragments = new ArrayList<>();
+        mfragments.add(new StockTaskDetailsFragment());
+
+        viewPagerAdapter = new ViewPagerAdapter(getSupportFragmentManager(), mfragments);
+        vpMain.setAdapter(viewPagerAdapter);
+        vpMain.setOnPageChangeListener(new LazyViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+
+            }
+
+            @Override
+            public void onPageSelected(int position) {
+                invalidateOptionsMenu();
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
+
+            }
+        });
+        vpMain.setCurrentItem(0);
+    }
+
+    @Override
+    public void ShowData(String s) {
+
+    }
+}

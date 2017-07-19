@@ -1,0 +1,244 @@
+package com.lide.app.service;
+
+import android.content.Context;
+import android.util.Log;
+
+import com.lide.app.MApplication;
+import com.lubin.bean.OutBoundOrder;
+import com.lubin.bean.TakeStockEpcCollect;
+import com.lubin.bean.TakeStockOrder;
+import com.lubin.bean.TakeStockSkuCollect;
+import com.lubin.bean.TakeStockTask;
+import com.lubin.bean.User;
+import com.lubin.dao.DaoSession;
+import com.lubin.dao.OutBoundOrderDao;
+import com.lubin.dao.TakeStockEpcCollectDao;
+import com.lubin.dao.TakeStockOrderDao;
+import com.lubin.dao.TakeStockSkuCollectDao;
+import com.lubin.dao.TakeStockTaskDao;
+import com.lubin.dao.UserDao;
+
+import org.greenrobot.greendao.Property;
+import org.greenrobot.greendao.query.QueryBuilder;
+
+import java.util.List;
+
+/**
+ * 用户操作类
+ * Created by cg on 2015/12/29.
+ */
+public class DbService {
+    private static final String TAG = DbService.class.getSimpleName();
+    private static DbService instance;
+    private static Context appContext;
+    private DaoSession mDaoSession;
+    private UserDao userDao;
+    private TakeStockOrderDao takeStockOrderDao;
+    private TakeStockTaskDao takeStockTaskDao;
+    private TakeStockEpcCollectDao takeStockEpcCollectDao;
+    private TakeStockSkuCollectDao takeStockSkuCollectDao;
+    private OutBoundOrderDao outBoundOrderDao;
+
+    private DbService() {
+    }
+
+    /**
+     * 采用单例模式
+     *
+     * @param context 上下文
+     * @return dbservice
+     */
+    public static DbService getInstance(Context context) {
+        if (instance == null) {
+            instance = new DbService();
+            if (appContext == null) {
+                appContext = context.getApplicationContext();
+            }
+            instance.mDaoSession = MApplication.getDaoSession(context);
+            instance.userDao = instance.mDaoSession.getUserDao();
+            instance.takeStockTaskDao = instance.mDaoSession.getTakeStockTaskDao();
+            instance.takeStockOrderDao = instance.mDaoSession.getTakeStockOrderDao();
+            instance.takeStockEpcCollectDao = instance.mDaoSession.getTakeStockEpcCollectDao();
+            instance.takeStockSkuCollectDao = instance.mDaoSession.getTakeStockSkuCollectDao();
+            instance.outBoundOrderDao = instance.mDaoSession.getOutBoundOrderDao();
+        }
+        return instance;
+    }
+
+    /**********************
+     * 用户类别
+     *********************************/
+
+    public List<User> queryUser(String appKey) {
+        QueryBuilder<User> qb = userDao.queryBuilder();
+        qb.where(UserDao.Properties.ApiKey.eq(appKey));
+        return qb.list();
+    }
+
+    public List<User> queryUserByName(String userName) {
+        QueryBuilder<User> qb = userDao.queryBuilder();
+        qb.where(UserDao.Properties.UserName.eq(userName));
+        return qb.list();
+    }
+
+    public List<User> loadAllUser() {
+        return userDao.loadAll();
+    }
+
+    public long saveUser(User user) {
+        return userDao.insertOrReplace(user);
+    }
+
+    /**********************
+     * 盘点单类别
+     *********************************/
+
+    public List<TakeStockOrder> queryOrderByName(String name) {
+        QueryBuilder<TakeStockOrder> qb = takeStockOrderDao.queryBuilder();
+        qb.where(TakeStockOrderDao.Properties.Code.eq(name));
+        return qb.list();
+    }
+
+    public List<TakeStockOrder> queryOrderByID(Long id) {
+        QueryBuilder<TakeStockOrder> qb = takeStockOrderDao.queryBuilder();
+        qb.where(TakeStockOrderDao.Properties.Id.eq(id));
+        return qb.list();
+    }
+
+    public long saveOrder(TakeStockOrder takeStockOrder) {
+        return takeStockOrderDao.insertOrReplace(takeStockOrder);
+    }
+
+    /**********************
+     * 任务类别
+     *********************************/
+
+    public long saveCheckTask(TakeStockTask takeStockTask) {
+        return takeStockTaskDao.insertOrReplace(takeStockTask);
+    }
+
+    public List<TakeStockTask> getAllCheckTask() {
+        return takeStockTaskDao.loadAll();
+    }
+
+    public List<TakeStockTask> queryCheckTask(String name) {
+        QueryBuilder<TakeStockTask> qb = takeStockTaskDao.queryBuilder();
+        qb.where(TakeStockTaskDao.Properties.Name.eq(name));
+        return qb.list();
+    }
+
+    public List<TakeStockTask> queryCheckTaskCodeId(String codeId) {
+        QueryBuilder<TakeStockTask> qb = takeStockTaskDao.queryBuilder();
+        qb.where(TakeStockTaskDao.Properties.CodeId.eq(codeId));
+        return qb.list();
+    }
+
+    public List<TakeStockTask> queryCheckTaskByWarehouseCode(String warehouseCode) {
+        QueryBuilder<TakeStockTask> qb = takeStockTaskDao.queryBuilder();
+        qb.where(TakeStockTaskDao.Properties.WarehouseCode.eq(warehouseCode));
+        return qb.list();
+    }
+
+    public void deleteCheckTask(long id) {
+        takeStockTaskDao.deleteByKey(id);
+        Log.i(TAG, "delete");
+    }
+
+    public void saveCollectLists(final List<TakeStockEpcCollect> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        takeStockEpcCollectDao.insertOrReplaceInTx(list);
+    }
+
+    public void updateCollectList(final List<TakeStockEpcCollect> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        takeStockEpcCollectDao.updateInTx(list);
+    }
+
+    public List<TakeStockEpcCollect> queryCollect(Long TakeStockTaskCode, boolean isUploading) {
+        QueryBuilder<TakeStockEpcCollect> qb = takeStockEpcCollectDao.queryBuilder();
+        qb.where(TakeStockEpcCollectDao.Properties.TaskId.eq(TakeStockTaskCode), TakeStockEpcCollectDao.Properties.IsUpload.eq(isUploading));
+        return qb.list();
+    }
+
+    public List<TakeStockEpcCollect> queryCollect(Long TakeStockTaskCode) {
+        QueryBuilder<TakeStockEpcCollect> qb = takeStockEpcCollectDao.queryBuilder();
+        qb.where(TakeStockEpcCollectDao.Properties.TaskId.eq(TakeStockTaskCode));
+        return qb.list();
+    }
+
+    public void deleteCollectLists(final List<TakeStockEpcCollect> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        takeStockEpcCollectDao.deleteInTx(list);
+    }
+
+    /**********************
+     * 采集类别(sku)
+     *********************************/
+
+    public void saveSkuCollect(final TakeStockSkuCollect takeStockSkuCollect) {
+        if (takeStockSkuCollect == null) {
+            return;
+        }
+        takeStockSkuCollectDao.insertOrReplaceInTx(takeStockSkuCollect);
+    }
+
+
+    public void deleteSkuCollect(final TakeStockSkuCollect takeStockSkuCollect) {
+        if (takeStockSkuCollect == null) {
+            return;
+        }
+        takeStockSkuCollectDao.deleteInTx(takeStockSkuCollect);
+    }
+
+    public void updateSkuCollect(TakeStockSkuCollect takeStockSkuCollect) {
+        takeStockSkuCollectDao.updateInTx(takeStockSkuCollect);
+    }
+
+
+    public List<TakeStockSkuCollect> querySkuCollectByTaskCode(Long taskCode) {
+        QueryBuilder<TakeStockSkuCollect> qb = takeStockSkuCollectDao.queryBuilder();
+        qb.where(TakeStockSkuCollectDao.Properties.TaskId.eq(taskCode));
+        qb.orderDesc(TakeStockSkuCollectDao.Properties.Date);
+        return qb.list();
+    }
+
+    public List<TakeStockSkuCollect> querySkuCollectByOrderCode(String orderCode) {
+        QueryBuilder<TakeStockSkuCollect> qb = takeStockSkuCollectDao.queryBuilder();
+        qb.where(TakeStockSkuCollectDao.Properties.TaskId.eq(orderCode));
+        return qb.list();
+    }
+
+    public void deleteSkuCollectList(final List<TakeStockSkuCollect> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        takeStockSkuCollectDao.deleteInTx(list);
+    }
+
+    /**
+     * 出库单类别
+     */
+    public void saveOutBoundOrder(OutBoundOrder outBoundOrder) {
+        outBoundOrderDao.saveInTx(outBoundOrder);
+    }
+
+    public List<OutBoundOrder> loadAllOutBoundOrder() {
+        return outBoundOrderDao.queryBuilder().orderAsc(OutBoundOrderDao.Properties.Create_time).list();
+    }
+
+    public List<TakeStockTask> getItemByParameter(Property name, String id) {
+        QueryBuilder qb = takeStockTaskDao.queryBuilder();
+        qb.where(name.eq(id));
+        List list = qb.list();
+        if (list != null) {
+            return list;
+        }
+        return null;
+    }
+}

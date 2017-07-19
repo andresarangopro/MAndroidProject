@@ -1,0 +1,130 @@
+package com.lide.app.presenter.search;
+
+import android.util.Log;
+
+import com.google.gson.internal.LinkedTreeMap;
+import com.lide.app.MApplication;
+import com.lide.app.bean.JsonToBean.BaseContainerBean;
+import com.lide.app.listener.OnLoadFinishListener;
+import com.lide.app.model.CreateModel;
+import com.lide.app.model.MInterface.IQueryModel;
+import com.lide.app.model.QueryModelImpl;
+import com.lide.app.persistence.util.FormatUtils;
+import com.lide.app.persistence.util.Utils;
+import com.lide.app.presenter.PInterface.ISearchWarehouseListPresenter;
+import com.lide.app.service.DbService;
+import com.lide.app.ui.VInterface.IDataFragmentView;
+import com.lubin.bean.OutBoundOrder;
+
+import org.json.JSONObject;
+
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by lubin on 2016/11/17.
+ */
+
+public class SearchWarehouseListPresenterImpl implements ISearchWarehouseListPresenter {
+
+    IDataFragmentView<List<LinkedTreeMap>> view;
+    IQueryModel queryModel;
+    CreateModel createModel;
+    String TAG = "test";
+    BaseContainerBean result = null;
+    String mCode = null;
+    DbService db = DbService.getInstance(MApplication.getInstance());
+
+    public SearchWarehouseListPresenterImpl(IDataFragmentView<List<LinkedTreeMap>> view) {
+        this.view = view;
+        this.queryModel = new QueryModelImpl();
+        this.createModel = new CreateModel();
+
+    }
+    //查询仓库列表分批
+    @Override
+    public void SearchWarehouseList(String code) {
+
+        if (mCode == null) {
+            mCode = code;
+        } else {
+            if (!code.equals(mCode)) {
+                mCode = code;
+                result = null;
+            }
+        }
+
+        if (result != null) {
+            if (!result.hasNext) {
+                view.ShowToast("没有数据啦！");
+                return;
+            }
+        }
+
+        view.startProgressDialog("下载中...");
+        try {
+            queryModel.queryWarehouseList("%" + code + "%", new OnLoadFinishListener() {
+                @Override
+                public void OnLoadFinish(Map<String, String> map) {
+                    Log.d(TAG, "OnLoadFinish: " + map.toString());
+                    if (map.get("statusCode").equals("200")) {
+                        try {
+                            result = FormatUtils.resultToBean(map.get("result"), BaseContainerBean.class);
+                        } catch (Exception e) {
+                            view.showDialog(e.toString());
+                        }
+                        if (result.data.size() == 0) {
+                            view.ShowToast("根据搜索到0条数据！");
+                        } else {
+                            view.ShowData(result.data);
+                        }
+                    } else {
+                        view.showDialog(map.get("result"));
+                    }
+                    view.stopProgressDialog(null);
+                }
+            });
+        } catch (Exception e) {
+            view.showDialog(e.toString());
+        }
+    }
+    //生成出库单
+    public void CreateOutBoundOrder(final LinkedTreeMap Warehouse) {
+        if (Warehouse == null) {
+            view.ShowToast("目标仓库为空");
+        }
+        view.startProgressDialog("生成出库单...");
+        try {
+            createModel.createOutBoundOrder(String.valueOf(Warehouse.get("id")), new OnLoadFinishListener() {
+                @Override
+                public void OnLoadFinish(Map<String, String> map) {
+                    Log.d(TAG, "OnLoadFinish: " + map.toString());
+                    if (map.get("statusCode").equals("200")) {
+                        try {
+                            OutBoundOrder outBoundOrder = new OutBoundOrder();
+                            JSONObject result = new JSONObject(map.get("result"));
+                            outBoundOrder.setCode(result.getString("code"));
+                            outBoundOrder.setOrderId(result.getString("id"));
+                            outBoundOrder.setToWarehouseName(String.valueOf(Warehouse.get("name")));
+                            outBoundOrder.setCreateTime(new Date(System.currentTimeMillis()));
+                            outBoundOrder.setQty(0);
+                            outBoundOrder.setOperateQty(0);
+                            outBoundOrder.setStatus("新单");
+                            db.saveOutBoundOrder(outBoundOrder);
+                            view.showDialog(null);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    } else {
+                        view.showDialog(map.get("result"));
+                    }
+                    view.stopProgressDialog(null);
+                }
+            });
+        } catch (Exception e) {
+            view.showDialog(e.toString());
+        }
+    }
+
+}

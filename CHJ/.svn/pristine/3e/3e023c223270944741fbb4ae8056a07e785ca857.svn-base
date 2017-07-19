@@ -1,0 +1,61 @@
+package com.lubin.chj.adapter;
+
+import android.content.Context;
+import android.util.Log;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.CheckBox;
+import android.widget.TextView;
+
+import com.lubin.chj.R;
+import com.lubin.chj.bean.jsonToBean.QueryPcReturn;
+
+import java.util.List;
+import java.util.Map;
+
+public class PickByDirectAdapter extends BaseListAdapter<QueryPcReturn.ListBean> {
+    List<Boolean> flags;
+
+    public PickByDirectAdapter(Context context, List<QueryPcReturn.ListBean> list, List<Boolean> flags) {
+        super(context, list);
+        this.flags = flags;
+    }
+
+    @Override
+    public View bindView(final int position, View convertView, ViewGroup parent) {
+        if (convertView == null) {
+            convertView = mInflater.inflate(R.layout.item_lv_pick, parent, false);
+
+        }
+        final QueryPcReturn.ListBean listBean = getList().get(position);
+        CheckBox cbQick = (CheckBox) convertView.findViewById(R.id.cb_isPick);
+        TextView wlh = (TextView) convertView.findViewById(R.id.tv_wlh);
+        TextView pch = (TextView) convertView.findViewById(R.id.tv_pch);
+        TextView gwh = (TextView) convertView.findViewById(R.id.tv_gwh);
+        TextView qybh = (TextView) convertView.findViewById(R.id.tv_qybh);
+        if (flags.size() == position) {
+            flags.add(true);
+        }
+        cbQick.setChecked(flags.get(position));
+        if (listBean.getWlh() == null) {
+            wlh.setText("");
+        } else {
+            wlh.setText(listBean.getWlh().toString());
+        }
+        if (listBean.getGwbh() == null) {
+            gwh.setText("");
+        } else {
+            gwh.setText(listBean.getGwbh().toString());
+        }
+        if (listBean.getQybh() == null) {
+            qybh.setText("");
+        } else {
+            qybh.setText(listBean.getQybh().toString());
+        }
+
+        pch.setText(listBean.getPch());
+
+        return convertView;
+    }
+
+}

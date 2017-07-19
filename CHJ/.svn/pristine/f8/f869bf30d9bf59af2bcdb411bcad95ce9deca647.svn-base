@@ -1,0 +1,421 @@
+package com.lubin.chj.view.activity;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.Toolbar;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.RadioButton;
+import android.widget.TextView;
+
+import com.lubin.chj.Listener.OnBroadCaseFinishListener;
+import com.lubin.chj.R;
+import com.lubin.chj.bean.Light;
+import com.lubin.chj.bean.jsonToBean.CabinetReturn;
+import com.lubin.chj.presenter.CabinetPresenterImpl;
+import com.lubin.chj.recycler.AbsAdapterItem;
+import com.lubin.chj.recycler.BaseRecyclerAdapter;
+import com.lubin.chj.recycler.GridRecyclerView;
+import com.lubin.chj.service.BarcodeReceiver;
+import com.lubin.chj.service.ScanServiceWithUHF;
+import com.lubin.chj.utils.AndroidUtils;
+import com.lubin.chj.utils.KeyboardUtils;
+import com.lubin.chj.view.activity.VInterface.ICabinetView;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
+/**
+ * Created by hkr on 2017/1/19.
+ */
+public class CabinetActivityCs extends BaseActivity implements ICabinetView<CabinetReturn.ListBean> {
+
+    @BindView(R.id.box_booth_check)
+    RadioButton boxBoothCheck;
+    @BindView(R.id.box_num_check)
+    RadioButton boxNumCheck;
+    @BindView(R.id.box_booth_big)
+    RadioButton boxBoothBig;
+    @BindView(R.id.box_booth_small)
+    RadioButton boxBoothSmall;
+    @BindView(R.id.tb_common)
+    Toolbar tbCommon;
+    @BindView(R.id.btn_query_num)
+    Button btnQueryNum;
+    @BindView(R.id.lv_query_cabinet)
+    View lvQueryCabinet;
+    @BindView(R.id.et_query_cabinet_booth)
+    EditText etQueryCabinetBooth;
+    @BindView(R.id.et_query_cabinet_num)
+    EditText etQueryCabinetNum;
+    @BindView(R.id.btn_query_booth)
+    Button btnQueryBooth;
+
+    private GridRecyclerView lvQueryCabinetListView;
+    public BaseRecyclerAdapter lvQueryCabinetListAdapter;
+
+    private CabinetPresenterImpl mPresenter;
+    private String size;
+
+    public ScanServiceWithUHF mService = ScanServiceWithUHF.getInstance();
+
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
+        setContentView(R.layout.activity_query_cabinet_cs);
+        ButterKnife.bind(this);
+        mPresenter = new CabinetPresenterImpl(this);
+        initHeader();
+        size = getIntent().getStringExtra("size");
+        initView();
+        initService();
+    }
+
+    private void initView() {
+        if (size.equals("0")) {
+            boxNumCheck.setChecked(false);
+            boxBoothCheck.setChecked(true);
+            boxBoothSmall.setChecked(false);
+            checkFlag = true;
+            boxBoothFlag = true;
+        } else {
+            boxNumCheck.setChecked(true);
+            boxBoothCheck.setChecked(false);
+            boxBoothSmall.setChecked(true);
+            checkFlag = false;
+            boxBoothFlag = false;
+            etQueryCabinetNum.setText(size);
+        }
+
+        lvQueryCabinetListView = new GridRecyclerView(getApplicationContext());
+        ((ViewGroup) lvQueryCabinet).addView(lvQueryCabinetListView, 0,
+                new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        lvQueryCabinetListView.setSpanCount(1);
+        lvQueryCabinetListView.setItemMargin(0);
+        lvQueryCabinetListAdapter = new BaseRecyclerAdapter();
+        lvQueryCabinetListView.setAdapter(lvQueryCabinetListAdapter);
+        lvQueryCabinetListView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return false;
+            }
+        });
+        lvQueryCabinetListAdapter.clear();
+    }
+
+    @Override
+    protected void onResume() {
+        tbCommon.setTitle("柜位查询");
+        etQueryCabinetBooth.requestFocus();
+        super.onResume();
+    }
+
+    private void initService() {
+        BarcodeReceiver.setListener(new OnBroadCaseFinishListener() {
+            @Override
+            public void onBroadCaseFinish(String data) {
+                if (etQueryCabinetBooth.isEnabled())
+                    etQueryCabinetBooth.setText(data);
+            }
+        });
+    }
+
+    private void initHeader() {
+        tbCommon.setNavigationIcon(R.mipmap.back);
+        tbCommon.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                leave();
+            }
+        });
+    }
+
+    boolean checkFlag = false;
+    boolean boxBoothFlag = false;
+    String gwbh = null;
+
+    @OnClick({R.id.box_booth_check, R.id.box_num_check, R.id.btn_query_num, R.id.btn_query_booth, R.id.box_booth_big, R.id.box_booth_small})
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.box_booth_check:
+                boxNumCheck.setChecked(false);
+                boxBoothCheck.setChecked(true);
+                checkFlag = true;
+                etQueryCabinetBooth.setEnabled(true);
+                etQueryCabinetBooth.setFocusable(true);
+                etQueryCabinetBooth.setFocusableInTouchMode(true);
+                etQueryCabinetBooth.requestFocus();
+                etQueryCabinetBooth.findFocus();
+                break;
+            case R.id.box_num_check:
+                boxNumCheck.setChecked(true);
+                boxBoothCheck.setChecked(false);
+                checkFlag = false;
+                etQueryCabinetNum.setEnabled(true);
+                etQueryCabinetNum.setFocusable(true);
+                etQueryCabinetNum.setFocusableInTouchMode(true);
+                etQueryCabinetNum.requestFocus();
+                etQueryCabinetNum.findFocus();
+                break;
+            case R.id.btn_query_num:
+                if (checkFlag) {
+                    String gwbhEdit = etQueryCabinetBooth.getText().toString();
+                    if (gwbhEdit.isEmpty()) {
+                        ShowDialog("请填写柜位！");
+                    } else {
+                        String s1 = btnQueryNum.getText().toString();
+                        if (s1.equals("亮灯")) {
+                            List<Light> lightList = getLightList(gwbhEdit, true);
+                            mPresenter.SetLight(lightList);
+                        } else {
+                            List<Light> lightList = getLightList(gwbhEdit, false);
+                            mPresenter.SetLight(lightList);
+                        }
+                    }
+                } else {
+                    if (gwbh == null) {
+                        ShowDialog("请选择柜位！");
+                    } else {
+                        String s1 = btnQueryNum.getText().toString();
+//                    String gwbh = etQueryCabinetBooth.getText().toString();
+                        if (s1.equals("亮灯")) {
+                            List<Light> lightList = getLightList(gwbh, true);
+                            mPresenter.SetLight(lightList);
+                        } else {
+                            List<Light> lightList = getLightList(gwbh, false);
+                            mPresenter.SetLight(lightList);
+                        }
+                    }
+                }
+                break;
+            case R.id.btn_query_booth:
+                if (checkFlag) {
+                    if (etQueryCabinetBooth.getText().toString().isEmpty()) {
+                        ShowDialog("输入柜位！");
+                    } else {
+                        String s = btnQueryNum.getText().toString();
+                        if (s.equals("亮灯")) {
+                            String key = etQueryCabinetBooth.getText().toString();
+                            mPresenter.QueryCabinet(key);
+                            KeyboardUtils.hideSoftInput(this);
+                        }
+                    }
+                } else {
+                    if (etQueryCabinetNum.getText().toString().isEmpty()) {
+                        ShowDialog("输入查询数量！");
+                    } else {
+                        String s = btnQueryNum.getText().toString();
+                        if (s.equals("亮灯")) {
+                            String cfsl = etQueryCabinetNum.getText().toString();
+                            String gwdx;
+                            if (boxBoothFlag) gwdx = "大";
+                            else gwdx = "小";
+                            mPresenter.setQueryGWList(Integer.parseInt(cfsl), gwdx);
+                            KeyboardUtils.hideSoftInput(this);
+                        }
+                    }
+                }
+                break;
+            case R.id.box_booth_big:
+                boxBoothFlag = true;
+                break;
+            case R.id.box_booth_small:
+                boxBoothFlag = false;
+                break;
+        }
+    }
+
+    private void leave() {
+        String s1 = btnQueryNum.getText().toString();
+        if (s1.equals("灭灯")) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage("提示");
+            builder.setMessage("灯还亮着，请先灭灯才能退出！");
+            builder.setPositiveButton("确定", null);
+            builder.show();
+        } else {
+            finish();
+        }
+    }
+
+    int pos = 0;
+
+    private class CabinetItem extends AbsAdapterItem {
+        public CabinetReturn.ListBean listBean;
+        ImageView radio_button;
+        View item_lv_cabinet;
+
+        public CabinetItem(CabinetReturn.ListBean listBean) {
+            this.listBean = listBean;
+        }
+
+        @Override
+        public View onCreateView(ViewGroup parent, final int position) {
+            View view = View.inflate(getApplicationContext(), R.layout.item_lv_cabinet, null);
+
+
+            return view;
+        }
+
+        @Override
+        public void onBindView(BaseRecyclerAdapter.BaseViewHolder holder, View view, final int position) {
+            TextView qybh = (TextView) view.findViewById(R.id.tv_qybh);
+            TextView sjsl = (TextView) view.findViewById(R.id.tv_sjsl);
+            TextView kysl = (TextView) view.findViewById(R.id.tv_kysl);
+
+            qybh.setText(listBean.getGwbh() + "");
+            sjsl.setText(listBean.getSjcfsl() + "");
+            kysl.setText((listBean.getBzcfsl() - listBean.getSjcfsl()) + "");
+            item_lv_cabinet = view.findViewById(R.id.item_lv_cabinet);
+            radio_button = (ImageView) view.findViewById(R.id.radio_button);
+            item_lv_cabinet.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    String s1 = btnQueryNum.getText().toString();
+                    if (s1.equals("亮灯")) {
+                        ((CabinetItem) lvQueryCabinetListAdapter.getItem(pos)).radio_button.setImageResource(R.mipmap.raido_btn);
+                        radio_button.setImageResource(R.mipmap.raido_btn_s);
+                        pos = position;
+                        gwbh = listBean.getGwbh();
+                    }
+                }
+            });
+            item_lv_cabinet.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    String s1 = btnQueryNum.getText().toString();
+                    if (s1.equals("亮灯")) {
+                        String gwbh = listBean.getGwbh();
+                        Intent intent = new Intent(CabinetActivityCs.this, QuYuActivity.class);
+                        intent.putExtra("gwbh", gwbh);
+                        startAnimActivity(intent);
+                    }
+                    return false;
+                }
+            });
+
+            if (checkFlag) {
+                String s1 = btnQueryNum.getText().toString();
+                if (s1.equals("亮灯")) {
+                    String gwbh = listBean.getGwbh();
+                    Intent intent = new Intent(CabinetActivityCs.this, QuYuActivity.class);
+                    intent.putExtra("gwbh", gwbh);
+                    startAnimActivity(intent);
+                }
+            }
+        }
+
+        @Override
+        public void onViewAttachedToWindow(BaseRecyclerAdapter.BaseViewHolder holder, View view) {
+
+        }
+    }
+
+    @Override
+    public void ShowCabinets(final List<CabinetReturn.ListBean> list) {
+        AndroidUtils.MainHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                lvQueryCabinetListAdapter.clear();
+                if (list != null && list.size() > 0)
+                    if (checkFlag) {
+                        CabinetReturn.ListBean bean = list.get(0);
+                        int bzcfsl = 0;
+                        int sjcfsl = 0;
+                        for (Iterator<CabinetReturn.ListBean> iterator = list.iterator(); iterator.hasNext(); ) {
+                            CabinetReturn.ListBean listBean = iterator.next();
+                            bzcfsl = bzcfsl + listBean.getBzcfsl();
+                            sjcfsl = sjcfsl + listBean.getSjcfsl();
+                        }
+                        bean.setSjcfsl(sjcfsl);
+                        bean.setBzcfsl(bzcfsl);
+                        lvQueryCabinetListAdapter.addItem(new CabinetItem(bean));
+                    } else {
+                        for (Iterator<CabinetReturn.ListBean> iterator = list.iterator(); iterator.hasNext(); ) {
+                            CabinetReturn.ListBean listBean = iterator.next();
+                            lvQueryCabinetListAdapter.addItem(new CabinetItem(listBean));
+                        }
+                    }
+                else ShowDialog("没有查询到柜位!");
+            }
+        });
+    }
+
+    @Override
+    public void changeBtnStatus() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                String s1 = btnQueryNum.getText().toString();
+                if (s1.equals("亮灯")) {
+                    btnQueryNum.setText("灭灯");
+                    etQueryCabinetBooth.setFocusable(false);
+                    etQueryCabinetBooth.setEnabled(false);
+                    etQueryCabinetNum.setFocusable(false);
+                    etQueryCabinetNum.setEnabled(false);
+                    btnQueryBooth.setEnabled(false);
+                    boxBoothCheck.setEnabled(false);
+                    boxNumCheck.setEnabled(false);
+                    boxBoothBig.setEnabled(false);
+                    boxBoothSmall.setEnabled(false);
+                    lvQueryCabinetListView.setEnabled(false);
+                    KeyboardUtils.hideSoftInput(CabinetActivityCs.this);
+                } else {
+                    btnQueryNum.setText("亮灯");
+                    etQueryCabinetBooth.setEnabled(true);
+                    etQueryCabinetNum.setEnabled(true);
+                    btnQueryBooth.setEnabled(true);
+                    boxBoothCheck.setEnabled(true);
+                    boxNumCheck.setEnabled(true);
+                    boxBoothBig.setEnabled(true);
+                    boxBoothSmall.setEnabled(true);
+                    lvQueryCabinetListView.setEnabled(true);
+                    KeyboardUtils.showSoftInput(CabinetActivityCs.this, etQueryCabinetBooth);
+                }
+            }
+        });
+    }
+
+    private List<Light> getLightList(String gwbh, boolean b) {
+        List<Light> list = new ArrayList<>();
+        Light light = new Light();
+        light.gwbh = gwbh;
+        light.isOpen = b;
+        list.add(light);
+        return list;
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (275 == keyCode)
+            mService.scanBarcode();
+        return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if (275 == keyCode)
+            mService.stopScan();
+        return super.onKeyUp(keyCode, event);
+    }
+
+    @Override
+    public void onBackPressed() {
+        leave();
+    }
+}

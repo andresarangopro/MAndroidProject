@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg_color_base">#303F9F</color>
+    <color name="white">#ffffff</color>
+    <color name="black">#000000</color>
+    <color name="transparent">#00000000</color>
+    <color name="focused_false">#BDC7D8</color>
+    <color name="shadow">#88CECECE</color>
+    <color name="line_text_color">#B6B6B6</color>
+    <color name="divider_view">#bfbfbf</color>
+
+
+    <color name="primary">#3F51B5</color>
+    <color name="primary_dark">#303F9F</color>
+    <color name="status_bar_color">@color/primary_dark</color>
+    <color name="textColorPrimary">@color/white</color>
+
+    <color name="stock_read_background_small">#18b3f0</color>
+    <color name="stock_read_background_big">#00a8ec</color>
+    <color name="stock_read_shadow_big">#d4e3e9</color>
+    <color name="stock_read_shadow_small">#d9d9d9</color>
+
+    <color name="lide_logo_brown">#ff6600</color>
+    <color name="lide_num_blue">#4559ca</color>
+</resources>

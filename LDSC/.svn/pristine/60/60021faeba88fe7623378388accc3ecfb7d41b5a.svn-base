@@ -1,0 +1,109 @@
+package com.lide.app.ui.inbound;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.Button;
+
+import com.lide.app.R;
+import com.lide.app.adapter.ControlIBOrderAdapter;
+import com.lide.app.config.Configs;
+import com.lide.app.persistence.util.DBOperator;
+import com.lide.app.persistence.util.Utils;
+import com.lide.app.persistence.widget.view.SwipeListView;
+import com.lide.app.ui.FragmentBase;
+import com.lide.app.ui.SearchActivity;
+import com.lide.app.ui.inbound.LS.InboundActivity;
+import com.lubin.bean.InBoundOrder;
+import com.lubin.dao.InBoundOrderDao;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+
+/**
+ * Created by Li De on 2016/9/22.
+ */
+//按订单收货界面
+public class InBoundByOrderFragment extends FragmentBase {
+    @BindView(R.id.goods_order_upload)
+    Button goodsOrderUpload;
+
+    @BindView(R.id.swipe_lv)
+    SwipeListView lv = null;
+    private View mView;
+    private ControlIBOrderAdapter mAdapter;
+    private List<InBoundOrder> orders = new ArrayList<>();
+    private DBOperator<InBoundOrderDao, InBoundOrder> orderDBOperator;
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        mView = inflater.inflate(R.layout.fragment_inbound_order_layout, container, false);
+        ButterKnife.bind(this, mView);
+        orderDBOperator = InboundTransaction.getOrderDBOperator();
+        initView();
+        return mView;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        mAdapter.addAll(getAllOrders());
+    }
+
+    private void initView() {
+
+        mAdapter = new ControlIBOrderAdapter(getActivity(), orders, this);
+        lv.setAdapter(mAdapter);
+
+        lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                InBoundOrder inBoundOrder = mAdapter.getList().get(position);
+                Intent intent = new Intent(getActivity(), InboundActivity.class);
+                intent.putExtra("orderId", inBoundOrder.getId());
+                intent.putExtra("inboundModel", inBoundOrder.getInboundMode());
+                startActivity(intent);
+            }
+        });
+
+        //下载订单
+        goodsOrderUpload.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getActivity(), SearchActivity.class);
+                intent.putExtra("Flag", Configs.SearchInBoundOrderFragment);
+                startAnimActivity(intent);
+            }
+        });
+    }
+
+    public List<InBoundOrder> getAllOrders() {
+        if (Utils.getCurrentUser() != null) {
+            if (Utils.getCurrentUser().getWarehouseCode().equals("")) {
+                return orderDBOperator.getItemsByParameters("code ASC");
+            } else {
+                String warehouseCode = Utils.getCurrentUser().getWarehouseCode();
+                List<InBoundOrder> list = orderDBOperator.getItemsByParameters("code ASC"
+                        , InBoundOrderDao.Properties.ToWarehouseCode.eq(warehouseCode));
+                return list;
+            }
+        } else {
+            return orderDBOperator.getItemsByParameters("code ASC");
+        }
+    }
+
+    @Override
+    public void showDialog(String result) {
+        super.showDialog(result);
+        if (result.equals("刪除成功") || result.equals("审核成功")) {
+            mAdapter.addAll(getAllOrders());
+        }
+    }
+}

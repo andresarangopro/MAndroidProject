@@ -1,0 +1,129 @@
+package com.lubin.chj.presenter;
+
+import android.util.Log;
+
+import com.lubin.chj.Listener.OnNetReqFinishListener;
+import com.lubin.chj.bean.Light;
+import com.lubin.chj.bean.PcInfo;
+import com.lubin.chj.modle.MInterface.IPickModel;
+import com.lubin.chj.modle.MInterface.ISetLightModel;
+import com.lubin.chj.modle.PickModelImpl;
+import com.lubin.chj.modle.SetLightModelImpl;
+import com.lubin.chj.presenter.IPresenter.IPickPresenter;
+import com.lubin.chj.view.activity.VInterface.IPickView;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+
+public class PickPresenterImpl implements IPickPresenter {
+    IPickView view;
+    IPickModel modle;
+    ISetLightModel setLightModel;
+
+    List<PcInfo> list = new ArrayList<>();
+
+    public PickPresenterImpl(IPickView view) {
+        this.setLightModel = new SetLightModelImpl();
+        this.modle = new PickModelImpl();
+        this.view = view;
+    }
+
+    @Override
+    public void QueryPc(String pcs) {
+        modle.queryPc(modle.getHashMap(pcs), new OnNetReqFinishListener() {
+            @Override
+            public void OnNetReqFinish(Map<String, Object> hashMap) {
+                Log.d("test", hashMap.toString());
+                String returnCode = hashMap.get("returnCode").toString();
+                String returnMsg = hashMap.get("returnMsg").toString();
+                if (returnCode.equals("0000")) {
+                    view.ShowPc(modle.getQueryPcListBean());
+                }
+            }
+        });
+    }
+
+    public void fetchPC(final List<PcInfo> pcInfos, String ckpzh) {
+
+        modle.fetchPC(modle.getHashMapFechPc(pcInfos, ckpzh), new OnNetReqFinishListener() {
+            @Override
+            public void OnNetReqFinish(Map<String, Object> hashMap) {
+                Log.d("test", hashMap.toString());
+                String returnCode = hashMap.get("returnCode").toString();
+                String returnMsg = hashMap.get("returnMsg").toString();
+                if (returnCode.equals("0000")) {
+                    list.clear();
+                    list.addAll(pcInfos);
+                    view.RemovePC(list);
+                }
+                view.ShowDialog(returnMsg);
+            }
+        });
+    }
+
+    public void QueryPcByPzh(String pzh) {
+        modle.queryPCByCkpzh(modle.getHashMapForPZH(pzh), new OnNetReqFinishListener() {
+            @Override
+            public void OnNetReqFinish(Map<String, Object> hashMap) {
+                Log.d("test", hashMap.toString());
+                String returnCode = hashMap.get("returnCode").toString();
+                String returnMsg = hashMap.get("returnMsg").toString();
+                if (returnCode.equals("0000")) {
+                    view.ShowPc(modle.getQueryPcBypzhListBean());
+                } else {
+                    view.ShowDialog(returnMsg);
+                }
+            }
+        });
+    }
+
+    public void SetLight(final List<Light> lights) {
+        setLightModel.setLight(setLightModel.getHashMapForLight(lights), new OnNetReqFinishListener() {
+            @Override
+            public void OnNetReqFinish(Map<String, Object> hashMap) {
+                String returnCode = hashMap.get("returnCode").toString();
+                String returnMsg = hashMap.get("returnMsg").toString();
+                if (returnCode.equals("0000")) {
+                    /*List<SetLightReturn.ListBean> lightListBean = setLightModel.getLightListBean();
+                    StringBuilder sb = new StringBuilder();
+                    for (SetLightReturn.ListBean bean : lightListBean) {
+                        if (bean.getRCode().equals("0003")) {
+                            sb.append(bean.getGwbh() + ":" + bean.getRMsg());
+                        }
+                    }
+                    if (!TextUtils.isEmpty(sb.toString())) {
+                        view.ShowDialog(sb.toString());
+                    }*/
+                    if (lights.get(0).isOpen) {
+                        view.ShowToast("柜位" + ":" + lights.get(0).gwbh + "亮灯成功！");
+                    } else {
+                        view.ShowToast("柜位" + ":" + lights.get(0).gwbh + "灭灯成功！");
+                    }
+                    view.changeBtnView();
+                } else {
+                    view.ShowToast("柜位" + ":" + lights.get(0).gwbh + returnMsg);
+                }
+
+            }
+        });
+    }
+
+    @Override
+    public void nofetchPc(List<PcInfo> pcInfos, String ckpzh, String wqhyy) {
+        modle.noFetching(modle.getHashMapNofetching(pcInfos, ckpzh, wqhyy), new OnNetReqFinishListener() {
+            @Override
+            public void OnNetReqFinish(Map<String, Object> hashMap) {
+                Log.d("test", hashMap.toString());
+                String returnCode = hashMap.get("returnCode").toString();
+                String returnMsg = hashMap.get("returnMsg").toString();
+                if (returnCode.equals("0000")) {
+                    view.ActivityFinish();
+                } else {
+                    view.ShowDialog(returnMsg);
+                }
+            }
+        });
+    }
+}

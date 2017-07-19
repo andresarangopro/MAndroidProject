@@ -1,0 +1,103 @@
+package com.lubin.chj.view.activity.Fragment;
+
+import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.TextView;
+
+import com.lubin.chj.R;
+import com.lubin.chj.recycler.AbsAdapterItem;
+import com.lubin.chj.recycler.BaseRecyclerAdapter;
+import com.lubin.chj.recycler.GridRecyclerView;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
+/**
+ * Created by hkr on 2017/1/20.
+ */
+public class PickInvoiceFragment extends FragmentBase {
+
+    @BindView(R.id.pick_invoice_list)
+    TextView pickInvoiceList;
+    @BindView(R.id.pick_invoice_num)
+    TextView pickInvoiceNum;
+    @BindView(R.id.pick_invoice_layout)
+    View pickInvoiceLayout;
+
+
+    private View mView;
+    private GridRecyclerView pickInvoiceListView;
+    public BaseRecyclerAdapter pickInvoiceListAdapter;
+
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        mView = inflater.inflate(R.layout.fragment_pick_invoice, container, false);
+        ButterKnife.bind(this, mView);
+        initView();
+        initData();
+        return mView;
+    }
+
+    private void initData() {
+        for (int i = 0; i < 5; i++) {
+            pickInvoiceListAdapter.addItem(new PickInvoiceItem());
+        }
+    }
+
+    private void initView() {
+        pickInvoiceListView = new GridRecyclerView(getActivity());
+        ((ViewGroup) pickInvoiceLayout).addView(pickInvoiceListView, 0,
+                new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        pickInvoiceListView.setSpanCount(1);
+        pickInvoiceListView.setItemMargin(0);
+        pickInvoiceListAdapter = new BaseRecyclerAdapter();
+        pickInvoiceListView.setAdapter(pickInvoiceListAdapter);
+        pickInvoiceListView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return false;
+            }
+        });
+        pickInvoiceListAdapter.clear();
+    }
+
+    @OnClick(R.id.btn_complete)
+    public void onClick() {
+    }
+
+    private class PickInvoiceItem extends AbsAdapterItem {
+        private TextView pick_invoice_store_code;
+        private TextView pick_invoice_level;
+        private TextView pick_invoice_distribution_order;
+        private TextView pick_invoice_all_num;
+        private TextView pick_invoice_pick_num;
+
+        @Override
+        public View onCreateView(ViewGroup parent, int position) {
+            View view = View.inflate(getActivity(), R.layout.fragment_pick_invoice_item, null);
+            return view;
+        }
+
+        @Override
+        public void onBindView(BaseRecyclerAdapter.BaseViewHolder holder, View view, int position) {
+            pick_invoice_store_code = (TextView) view.findViewById(R.id.pick_invoice_store_code);
+            pick_invoice_level = (TextView) view.findViewById(R.id.pick_invoice_level);
+            pick_invoice_distribution_order = (TextView) view.findViewById(R.id.pick_invoice_distribution_order);
+            pick_invoice_all_num = (TextView) view.findViewById(R.id.pick_invoice_all_num);
+            pick_invoice_pick_num = (TextView) view.findViewById(R.id.pick_invoice_pick_num);
+
+        }
+
+        @Override
+        public void onViewAttachedToWindow(BaseRecyclerAdapter.BaseViewHolder holder, View view) {
+        }
+    }
+}

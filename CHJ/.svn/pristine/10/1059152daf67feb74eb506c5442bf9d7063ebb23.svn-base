@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    android:orientation="vertical">
+
+    <include
+        android:id="@+id/title_view_main"
+        layout="@layout/common_title" />
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+
+            <Button
+                android:id="@+id/btn_store"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:background="@drawable/button_line_active"
+                android:text="货品存放管理"
+                android:textColor="@drawable/button_line_text"
+                android:textSize="18sp" />
+
+            <Button
+                android:id="@+id/btn_take"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/button_line_active"
+                android:text="拣货管理"
+                android:textColor="@drawable/button_line_text"
+                android:textSize="18sp" />
+
+            <Button
+                android:id="@+id/btn_adjust"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/button_line_active"
+                android:text="货品移柜管理"
+                android:textColor="@drawable/button_line_text"
+                android:textSize="18sp" />
+
+            <Button
+                android:id="@+id/btn_stockTake"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/button_line_active"
+                android:text="盘点管理"
+                android:textColor="@drawable/button_line_text"
+                android:textSize="18sp" />
+
+            <Button
+                android:id="@+id/btn_search"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/button_line_active"
+                android:text="搜索"
+                android:textColor="@drawable/button_line_text"
+                android:textSize="18sp" />
+
+            <Button
+                android:id="@+id/btn_setting"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/button_line_active"
+                android:text="设置"
+                android:textColor="@drawable/button_line_text"
+                android:textSize="18sp" />
+
+            <Button
+                android:id="@+id/btn_out"
+                android:layout_width="match_parent"
+                android:layout_height="45dp"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/button_line_active"
+                android:text="注销"
+                android:textColor="@drawable/button_line_text"
+                android:textSize="18sp" />
+        </LinearLayout>
+
+</LinearLayout>
+
+

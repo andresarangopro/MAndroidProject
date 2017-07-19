@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.lide.app">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT" />
+    <uses-permission android:name="com.android.launcher.permission.READ_SETTINGS" />
+
+    <application
+        android:name="com.lide.app.MApplication"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/AppTheme">
+
+        <activity android:name=".ui.SplashActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        //登录界面
+        <activity android:name=".ui.LoginActivity" />
+        //主界面
+        <activity android:name=".ui.MainActivity" />
+        //盘点任务  大汇仓
+        <activity android:name=".ui.takeStock.StockTakingActivity" />
+        //盘点任务  UR
+        <activity android:name=".ui.takeStock.UR.StockTaskDetailsActivity" />
+        //盘点任务(sku)
+        <activity
+            android:name=".ui.takeStock.StockTakingBySkuActivity"
+            android:windowSoftInputMode="stateHidden|stateUnchanged" />
+        //查询差异界面
+        <activity android:name=".ui.takeStock.QueryDiffActivity" />
+        //查找界面
+        <activity android:name=".ui.findProduct.FindActivity" />
+        //设置界面
+        <activity android:name=".ui.SettingActivity" />
+        //EPC界面
+        <activity android:name=".ui.takeStock.EpcCollectActivity" />
+        //上传界面
+        <activity android:name=".ui.inbound.ControlInBoundOrderActivity" />
+        //扫描界面
+        //入库界面
+        <activity android:name=".ui.inbound.LS.InboundActivity" />
+        //上传epc界面
+        <activity android:name=".ui.takeStock.UpLoadCollectActivity" />
+        //搜索界面
+        <activity
+            android:name=".ui.SearchActivity"
+            android:windowSoftInputMode="stateHidden|stateUnchanged" />
+        //管理出库单界面
+        <activity android:name=".ui.outbound.ControlOutBoundActivity" />
+        //按单出库
+        <activity android:name=".ui.outbound.ur.OutBoundOrderActivity" />
+        //在生成出库单中，采集明细
+        <activity android:name=".ui.outbound.createOrder.ScanOBOrderByCreateActivity" />
+        //测试
+        <activity android:name=".ui.TestActivity"/>
+        //一对一绑定
+        <activity android:name=".ui.binding.OneToOneBindingActivity" />
+        //一对多绑定
+        <activity android:name=".ui.binding.OneToManyBindingActivity" />
+        //检测界面
+        <activity android:name=".ui.detection.DetectionActivity" />
+
+        <receiver android:name=".service.YBX.BarcodeReceiver">
+            <intent-filter>
+                <action android:name="android.intent.ACTION_DECODE_DATA" />
+            </intent-filter>
+        </receiver>
+
+        //主界面
+        <activity android:name=".ui.EnterActivity" />
+
+        //主界面
+        <activity android:name=".ui.inventory.InventoryActivity"
+            android:windowSoftInputMode="stateHidden|stateUnchanged"/>
+       //ur盘点界面
+        <activity android:name=".ui.takeStock.urentry.ControlCheckTaskActivity"/>
+    </application>
+
+</manifest>

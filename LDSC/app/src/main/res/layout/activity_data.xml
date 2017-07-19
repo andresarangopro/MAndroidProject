@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <android.support.design.widget.AppBarLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:elevation="5dp"
+        app:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+
+        <android.support.v7.widget.Toolbar
+            android:id="@+id/tb_data"
+            style="@style/Widget.AppCompat.Toolbar.Button.Navigation"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/common_title_height"
+            android:fitsSystemWindows="true"
+            android:minHeight="@dimen/abc_action_bar_default_height_material"
+            app:popupTheme="@style/Theme.ToolBar.Base">
+
+            <TextView
+                android:id="@+id/tv_data_title_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text=""
+                android:textColor="@color/white"
+                android:textSize="@dimen/text_size_big" />
+
+            <TextView
+                android:id="@+id/tv_data_scan_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:layout_gravity="right|center_vertical"
+                android:text="扫描"
+                android:padding="10dp"
+                android:textColor="@color/white"
+                android:textSize="15sp" />
+        </android.support.v7.widget.Toolbar>
+
+    </android.support.design.widget.AppBarLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:layout_below="@+id/title_main"
+        android:background="@drawable/down_dropshadow" />
+
+    <com.lide.app.persistence.view.NoScrollViewPager
+        android:id="@+id/vp_scanning"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+</LinearLayout>

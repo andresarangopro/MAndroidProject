@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/diff_search"
+        android:icon="@drawable/abc_ic_search_api_mtrl_alpha"
+        android:title="搜索"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/menu_diff"
+        android:icon="@drawable/abc_ic_menu_moreoverflow_mtrl_alpha"
+        android:title="展示模式"
+        app:showAsAction="ifRoom|withText">
+        <menu>
+            <group android:id="@+id/more_model">
+                <item
+                    android:id="@+id/action_all"
+                    android:title="全部"
+                    android:titleCondensed="ALL"
+                    app:showAsAction="ifRoom" />
+                <item
+                    android:id="@+id/action_diff"
+                    android:title="有差异"
+                    android:titleCondensed="DIFF"
+                    app:showAsAction="ifRoom" />
+                <item
+                    android:id="@+id/action_no_diff"
+                    android:title="无差异"
+                    android:titleCondensed="UN_DIFF"
+                    app:showAsAction="ifRoom" />
+
+            </group>
+        </menu>
+    </item>
+
+</menu>

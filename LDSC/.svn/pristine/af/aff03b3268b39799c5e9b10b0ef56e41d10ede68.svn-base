@@ -1,0 +1,169 @@
+package com.lide.app.model;
+
+import com.google.gson.Gson;
+import com.lide.app.MApplication;
+import com.lide.app.bean.BeanToJson.RequestForDeviceID;
+import com.lide.app.bean.BeanToJson.UserToJson;
+import com.lide.app.listener.OnLoadFinishListener;
+import com.lide.app.persistence.util.NetWorkForGetUtil;
+import com.lide.app.persistence.util.NetWorkUtil;
+import com.lide.app.persistence.util.StringUtils;
+import com.lide.app.persistence.util.Utils;
+import com.lide.app.service.DbService;
+import com.lubin.bean.TakeStockTask;
+import com.lubin.bean.User;
+
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by lubin on 2016/7/21.
+ */
+public class LoginModel {
+
+    private DbService db;
+    //api地址
+    String apiUrl;
+    private TakeStockTask currentTask;
+
+    public LoginModel() {
+        db = DbService.getInstance(MApplication.getInstance());
+        apiUrl = Utils.apiUrl;
+    }
+
+    public User findNewestUser() {
+        List<User> users = db.loadAllUser();
+        if (users.size() == 1) {
+            return users.get(0);
+        } else if (users.size() > 1) {
+            Collections.sort(users, new sortClass());
+            return users.get(users.size() - 1);
+        }
+        return null;
+    }
+
+    /**
+     * 登陆
+     */
+    public void LoginAtNet(final Map<String, String> map, final OnLoadFinishListener listener) {
+        currentTask = Utils.getCurrentTask();
+        NetWorkUtil.setListener(new OnLoadFinishListener() {
+            @Override
+            public void OnLoadFinish(Map<String, String> map) {
+                listener.OnLoadFinish(map);
+            }
+        });
+
+        //api方法
+        String apiMethod = "api/security/login";
+        String postUrl = apiUrl + apiMethod;
+
+        UserToJson userToJson = new UserToJson();
+        userToJson.accountType = "EMPLOYEE";
+        userToJson.businessModuleCode = "HDW";
+        userToJson.username = map.get("userName");
+        userToJson.password = map.get("password");
+        userToJson.warehouseCode = map.get("warehouseCode");
+        final String requestJsonData = new Gson().toJson(userToJson);
+
+        map.put("postUrl", postUrl);
+        map.put("requestJsonData", requestJsonData);
+
+        NetWorkUtil.StartNetWork(map);
+
+    }
+
+    public void saveUser(Map<String, String> map) {
+        String result = StringUtils.cutQuotation(map.get("result"));
+
+        User user = null;
+
+        if (db.queryUser(result).size() == 0) {
+            user = new User();
+        } else {
+            user = db.queryUser(result).get(0);
+        }
+
+        user.setApiKey(result);
+        user.setUserName(map.get("userName"));
+        user.setPassword(map.get("password"));
+        user.setWarehouseCode(map.get("warehouseCode"));
+        user.setDate(new Date(System.currentTimeMillis()));
+        db.saveUser(user);
+        Utils.setCurrentUser(user);
+        if (currentTask != null) {
+            currentTask.setUser(user);
+            currentTask.setUserId(user.getId());
+            currentTask.setWarehouseCode(map.get("warehouseCode"));
+            db.saveCheckTask(currentTask);
+        }
+    }
+
+    /**
+     * 仓库列表
+     *
+     * @param wareHouseCode 仓库编码
+     */
+    public Map<String, String> getMapForWareHouseId(String wareHouseCode) {
+        Map<String, String> map = new HashMap<>();
+        String apiKey = Utils.getApiKey();
+
+        //api方法
+        String apiMethod = "api/warehouse/list";
+        String postUrl = apiUrl + apiMethod;
+        RequestForDeviceID requestForDeviceID = new RequestForDeviceID();
+        requestForDeviceID.code = wareHouseCode;
+        String requestJsonData = new Gson().toJson(requestForDeviceID);
+
+        map.put("postUrl", postUrl);
+        map.put("requestJsonData", requestJsonData);
+        map.put("apiKey", apiKey);
+        return map;
+    }
+
+    public void requestForWhereHouseID(Map<String, String> map, final OnLoadFinishListener listener) {
+        NetWorkUtil.setListener(new OnLoadFinishListener() {
+            @Override
+            public void OnLoadFinish(Map<String, String> map) {
+                listener.OnLoadFinish(map);
+            }
+        });
+        NetWorkUtil.StartNetWork(map);
+    }
+
+    /**
+     * 获取业务设置信息
+     */
+    public void queryConfigsList(final OnLoadFinishListener listener) throws Exception {
+
+        String apiMethod = "api/business/config/list";
+        String postUrl = Utils.apiUrl + apiMethod;
+
+        NetWorkForGetUtil.startNetWord(postUrl, listener);
+    }
+
+    public boolean LoginAtOffLine(Map<String, String> map) {
+        List<User> user = db.queryUserByName(map.get("userName"));
+        if (user.size() != 0) {
+            if (user.get(0).getPassword().equals(map.get("password"))) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        return false;
+    }
+
+    class sortClass implements Comparator {
+        public int compare(Object arg0, Object arg1) {
+            User user0 = (User) arg0;
+            User user1 = (User) arg1;
+            int flag = user0.getDate().compareTo(user1.getDate());
+            return flag;
+        }
+    }
+}

@@ -1,0 +1,236 @@
+package com.lide.app.ui.outbound.createOrder;
+
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.ListView;
+import android.widget.TextView;
+
+import com.google.gson.internal.LinkedTreeMap;
+import com.lide.app.MApplication;
+import com.lide.app.R;
+import com.lide.app.adapter.DetailOutBoundOrderAdapter;
+import com.lide.app.config.Configs;
+import com.lide.app.persistence.util.DBOperator;
+import com.lide.app.persistence.util.SPUtils;
+import com.lide.app.persistence.util.Utils;
+import com.lide.app.presenter.outbound.ManageOBOrderByCreatePresenter;
+import com.lide.app.ui.FragmentBase;
+import com.lide.app.ui.LoginActivity;
+import com.lide.app.ui.VInterface.IDataFragmentView;
+import com.lubin.bean.OutBoundDetail;
+import com.lubin.bean.OutBoundOperate;
+import com.lubin.bean.OutBoundOrder;
+import com.lubin.dao.OutBoundOperateDao;
+import com.lubin.dao.OutBoundOrderDao;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
+/**
+ * Created by lubin on 2016/11/19.
+ */
+
+public class DetailOutBoundOrderByCreateFragment extends FragmentBase implements IDataFragmentView<LinkedTreeMap> {
+
+
+    @BindView(R.id.order_code)
+    TextView orderCode;
+    @BindView(R.id.order_state)
+    TextView orderState;
+    @BindView(R.id.order_address_all)
+    TextView orderAddressAll;
+    @BindView(R.id.order_all_num)
+    TextView orderAllNum;
+    @BindView(R.id.lv_contain_result)
+    ListView mListView;
+    @BindView(R.id.ll_detail_button)
+    LinearLayout llDetailButton;
+
+
+    private View mView;
+    private List<OutBoundDetail> mList = new ArrayList<>();
+    private DetailOutBoundOrderAdapter mAdapter;
+    private ScanOBOrderByCreateActivity mActivity;
+    private DBOperator<OutBoundOrderDao, OutBoundOrder> orderDBOperator;
+    private ManageOBOrderByCreatePresenter orderByCreatePresenter;
+    private DBOperator<OutBoundOperateDao, OutBoundOperate> operateDBOperator;
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        mView = inflater.inflate(R.layout.fragment_detail_out_bound_order_by_create, container, false);
+        ButterKnife.bind(this, mView);
+        mActivity = (ScanOBOrderByCreateActivity) getActivity();
+        orderByCreatePresenter = new ManageOBOrderByCreatePresenter(this);
+        orderDBOperator = OutboundTransaction.getOrderDBOperator();
+        operateDBOperator = OutboundTransaction.getOperateDBOperator();
+        initListView();
+        return mView;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        refresh();
+    }
+
+    private void initListView() {
+        mAdapter = new DetailOutBoundOrderAdapter(getActivity(), mList);
+        mListView.setAdapter(mAdapter);
+    }
+
+    public void refresh() {
+        OutBoundOrder outBoundOrder = orderDBOperator.getItemByID(mActivity.orderId);
+        outBoundOrder.refresh();
+        orderCode.setText(outBoundOrder.getCode());
+        orderState.setText(outBoundOrder.getStatus());
+        orderAllNum.setText(outBoundOrder.getQty() + "/" + outBoundOrder.getOperateQty());
+        orderAddressAll.setText(outBoundOrder.getToWarehouseName());
+        List<OutBoundDetail> details = outBoundOrder.getDetails();
+        Collections.sort(details, new Comparator<OutBoundDetail>() {
+            @Override
+            public int compare(OutBoundDetail lhs, OutBoundDetail rhs) {
+                return lhs.getBarcode().compareTo(rhs.getBarcode());
+            }
+        });
+        mAdapter.addAll(details);
+        if (outBoundOrder.getStatus().equals("已完成"))
+            llDetailButton.setVisibility(View.GONE);
+    }
+
+    public void upload() {
+        if (Utils.getApiKey() == null) {
+            Intent login = new Intent(getActivity(), LoginActivity.class);
+            login.putExtra("isAtNet", true);
+            startActivityForResult(login, Configs.LOGIN);
+        } else {
+            if (!SPUtils.get(getActivity(), "deviceId", "").equals("")) {
+                OutBoundOrder outBoundOrder = orderDBOperator.getItemByID(mActivity.orderId);
+                List<OutBoundOperate> operates = new ArrayList<>();
+                for (OutBoundOperate operate : outBoundOrder.getOperates()) {
+                    if (operate.getIsUpload()) continue;
+                    operate.setDeviceId(((String) SPUtils.get(MApplication.getInstance(), "deviceId", "")));
+                    operates.add(operate);
+                }
+                if (operates.size() == 0) {
+                    ShowToast("没有可上传的数据~");
+                    return;
+                }
+                orderByCreatePresenter.UploadOutboundOperate(outBoundOrder.getOrderId(), operates);
+            } else {
+                ShowToast("请先设置设备");
+            }
+        }
+    }
+
+    private void reset() {
+        OutBoundOrder outBoundOrder = orderDBOperator.getItemByID(mActivity.orderId);
+        List<OutBoundOperate> container = new ArrayList<>();
+        for (OutBoundOperate outBoundOperate : outBoundOrder.getOperates()) {
+            if (outBoundOperate.getBarcode() == null)
+                if (!outBoundOperate.getIsUpload())
+                    container.add(outBoundOperate);
+        }
+        operateDBOperator.deleteDatas(container);
+
+        outBoundOrder.resetOperates();
+        int orderSum = 0;
+        for (OutBoundOperate outBoundOperate : outBoundOrder.getOperates()) {
+            orderSum += outBoundOperate.getOperateQty();
+        }
+        outBoundOrder.setQty(orderSum);
+        outBoundOrder.setOperateQty(orderSum);
+        if (orderSum == 0)
+            outBoundOrder.setStatus("新单");
+        else
+            outBoundOrder.setStatus("处理中");
+        outBoundOrder.update();
+
+        for (OutBoundDetail outBoundDetail : outBoundOrder.getDetails()) {
+            outBoundDetail.resetOperates();
+            int detailSum = 0;
+            for (OutBoundOperate outBoundOperate : outBoundDetail.getOperates()) {
+                detailSum += outBoundOperate.getOperateQty();
+            }
+            if (detailSum == 0) {
+                outBoundDetail.delete();
+                outBoundOrder.resetDetails();
+            } else {
+                outBoundDetail.setQty(detailSum);
+                outBoundDetail.setOperateQty(detailSum);
+                outBoundDetail.update();
+            }
+        }
+        refresh();
+    }
+
+    @Override
+    public void showDialog(String result) {
+        super.showDialog(result);
+        if (result.equals("上传成功~")) {
+            List<OutBoundOperate> container = new ArrayList<>();
+            OutBoundOrder outBoundOrder = orderDBOperator.getItemByID(mActivity.orderId);
+            for (OutBoundOperate outBoundOperate : outBoundOrder.getOperates()) {
+                if (outBoundOperate.getOutBoundDetail().getOperateQty() == 0) {
+                    outBoundOperate.getOutBoundDetail().delete();
+                    outBoundOperate.delete();
+                } else {
+                    outBoundOperate.setIsUpload(true);
+                    container.add(outBoundOperate);
+                }
+            }
+            operateDBOperator.updateData(container);
+            outBoundOrder.resetDetails();
+            outBoundOrder.resetOperates();
+
+            List<OutBoundDetail> details = outBoundOrder.getDetails();
+            Collections.sort(details, new Comparator<OutBoundDetail>() {
+                @Override
+                public int compare(OutBoundDetail lhs, OutBoundDetail rhs) {
+                    return lhs.getBarcode().compareTo(rhs.getBarcode());
+                }
+            });
+            mAdapter.addAll(details);
+        }
+    }
+
+    @Override
+    public void ShowData(LinkedTreeMap linkedTreeMap) {
+
+    }
+
+    @OnClick({R.id.p_reset, R.id.p_start, R.id.sku_start})
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.p_reset:
+                builder.setMessage("是否重置？");
+                builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        reset();
+                    }
+                });
+                builder.setNegativeButton("取消", null);
+                builder.show();
+                break;
+            case R.id.p_start:
+                mActivity.setCurrentView(1);
+                break;
+            case R.id.sku_start:
+                mActivity.setCurrentView(2);
+                break;
+        }
+    }
+}

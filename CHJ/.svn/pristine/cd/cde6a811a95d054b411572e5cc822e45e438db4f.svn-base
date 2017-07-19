@@ -1,0 +1,249 @@
+package com.lubin.chj.view.activity.Fragment;
+
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.support.v7.app.AlertDialog;
+import android.view.KeyEvent;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.TextView;
+
+import com.lubin.chj.Listener.OnBroadCaseFinishListener;
+import com.lubin.chj.R;
+import com.lubin.chj.adapter.PcInfoAdapter;
+import com.lubin.chj.bean.PcInfo;
+import com.lubin.chj.bean.jsonToBean.GetPcWZReturnBean;
+import com.lubin.chj.modle.StorePcModelImpl;
+import com.lubin.chj.presenter.IPresenter.IStorePresenter;
+import com.lubin.chj.presenter.StorePresenterImpl;
+import com.lubin.chj.service.BarcodeReceiver;
+import com.lubin.chj.service.ScanServiceWithUHF;
+import com.lubin.chj.view.activity.AdjustActivity;
+import com.lubin.chj.view.activity.BaseActivity;
+import com.lubin.chj.view.activity.CabinetActivity;
+import com.lubin.chj.view.activity.VInterface.IStoreView;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.TimerTask;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
+public class AdjustStoreFragment extends FragmentBase implements IStoreView {
+    @BindView(R.id.tv_adjust_succeed_num)
+    TextView tvAdjustSucceedNum;
+    @BindView(R.id.lv_adjust)
+    ListView lvAdjust;
+    @BindView(R.id.cb_all)
+    CheckBox cbAll;
+    private View mView;
+
+    private EditText mEditText;
+    private List<PcInfo> mList = new ArrayList<>();
+    private List<String> container = new ArrayList<>();
+    private List<Boolean> flags = new ArrayList<>();
+    private PcInfoAdapter mAdapter;
+
+    private IStorePresenter mPresenter;
+    private AdjustActivity mActivity;
+    private ScanServiceWithUHF mService = ScanServiceWithUHF.getInstance();
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        mView = inflater.inflate(R.layout.fragment_adjust_product, container, false);
+        ButterKnife.bind(this, mView);
+        mActivity = (AdjustActivity) getActivity();
+        mPresenter = new StorePresenterImpl(this);
+        initListView();
+        return mView;
+    }
+
+    private void initListView() {
+        cbAll.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                for (int i = 0; i < flags.size(); i++) {
+                    flags.set(i, isChecked);
+                    String pch = mList.get(i).getPch();
+                    if (isChecked) {
+                        if (!container.contains(pch))
+                            container.add(pch);
+                    } else {
+                        container.remove(pch);
+                    }
+                    mAdapter.notifyDataSetChanged();
+                }
+            }
+        });
+        mAdapter = new PcInfoAdapter(mActivity, mList, flags);
+        lvAdjust.setAdapter(mAdapter);
+        lvAdjust.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                if (flags.get(position)) {
+                    flags.set(position, false);
+                    container.remove(mList.get(position).getPch());
+                } else {
+                    flags.set(position, true);
+                    container.add(mList.get(position).getPch());
+                }
+                mAdapter.notifyDataSetChanged();
+            }
+        });
+    }
+
+    public void showBarcodeScanDialog(DialogInterface.OnClickListener listener) {
+        mEditText = new EditText(mActivity);
+        AlertDialog.Builder builder = new AlertDialog.Builder(mActivity);
+        builder.setMessage("请扫描区域条码");
+        builder.setView(mEditText);
+        builder.setPositiveButton("确定", listener);
+        builder.setNegativeButton("取消", null);
+        builder.setOnKeyListener(new DialogInterface.OnKeyListener() {
+            @Override
+            public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
+                if (event.getRepeatCount() == 0) {
+                    if (keyCode == 275) {
+                        if (event.getAction() == KeyEvent.ACTION_DOWN) {
+                            mService.scanBarcode();
+                        } else {
+                            mService.stopScan();
+                        }
+                    }
+                }
+                return false;
+            }
+        });
+        builder.show();
+    }
+
+    @Override
+    public void ShowContinueDialog(final String result) {
+        runOnUiThread(new TimerTask() {
+            @Override
+            public void run() {
+                AlertDialog.Builder builder = new AlertDialog.Builder(mActivity);
+
+                builder.setMessage(result);
+                builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        StorePcModelImpl.mIngore = true;
+                        mPresenter.StoreEpc(mList, mEditText.getText().toString());
+                    }
+                });
+                builder.setNegativeButton("取消", null);
+                builder.show();
+            }
+        });
+    }
+
+    @Override
+    public void ShowDialog(String result) {
+        mActivity.ShowDialog(result);
+    }
+
+    @OnClick({R.id.bt_adjust_store, R.id.bt_adjust_counter_query, R.id.bt_adjust_clear})
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.bt_adjust_store:
+                BarcodeReceiver.setListener(new OnBroadCaseFinishListener() {
+                    @Override
+                    public void onBroadCaseFinish(String data) {
+                        if (mEditText != null) {
+                            mEditText.setText(data);
+                            mEditText.setSelection(data.length());
+                        }
+                    }
+                });
+                showBarcodeScanDialog(new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        StorePcModelImpl.mIngore = false;
+                        mPresenter.StoreEpc(mList, mEditText.getText().toString());
+                    }
+                });
+                break;
+            case R.id.bt_adjust_counter_query:
+                Intent intent = new Intent(mActivity, CabinetActivity.class);
+                startActivity(intent);
+                break;
+            case R.id.bt_adjust_clear:
+                for (String s : container) {
+                    int i;
+                    for (i = 0; i < mList.size(); i++) {
+                        if (mList.get(i).pch.equals(s)) {
+                            break;
+                        }
+                    }
+                    mList.remove(i);
+                    flags.remove(i);
+                }
+                container.clear();
+                if (mList.size() == 0) cbAll.setChecked(false);
+                mAdapter.notifyDataSetChanged();
+                tvAdjustSucceedNum.setText(String.valueOf(mList.size()));
+                break;
+        }
+    }
+
+    public void refresh() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                for (PcInfo pcInfo : mActivity.getPcInfos()) {
+                    mList.add(pcInfo);
+                    flags.add(false);
+                }
+                tvAdjustSucceedNum.setText(String.valueOf(mList.size()));
+                mAdapter.notifyDataSetChanged();
+            }
+        });
+    }
+
+    @Override
+    public void finishByBackBtn() {
+        if (mList.size() == 0) {
+            getActivity().finish();
+        } else {
+            ShowDialog("已取货，请先存放后再退出！");
+        }
+    }
+
+    @Override
+    public void finishByBackIcon() {
+        if (mList.size() == 0) {
+            ((BaseActivity) getActivity()).changeFragment(0);
+            ((AdjustActivity) getActivity()).clearPcInfo();
+        } else {
+            ShowDialog("已取货，请先存放后再退出！");
+        }
+    }
+
+    @Override
+    public void ShowStore(List<GetPcWZReturnBean.ListBean> list) {
+
+    }
+
+    @Override
+    public void refreshData() {
+
+
+    }
+
+    @Override
+    public void showDialogerror(String result) {
+
+    }
+}

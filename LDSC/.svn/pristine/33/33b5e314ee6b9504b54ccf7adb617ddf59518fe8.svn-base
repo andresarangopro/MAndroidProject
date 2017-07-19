@@ -1,0 +1,124 @@
+package com.lide.app.ui.takeStock.UR;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+
+import com.lide.app.R;
+import com.lide.app.config.Configs;
+import com.lide.app.persistence.util.Utils;
+import com.lide.app.presenter.takeStock.ConfigTakeStockTackPresenterImpl;
+import com.lide.app.ui.FragmentBase;
+import com.lide.app.ui.LoginActivity;
+import com.lide.app.ui.VInterface.IDataFragmentView;
+import com.lide.app.ui.takeStock.StockTakingActivity;
+import com.lide.app.ui.takeStock.StockTakingBySkuActivity;
+import com.lubin.bean.TakeStockEpcCollect;
+import com.lubin.bean.TakeStockSkuCollect;
+import com.lubin.dao.TakeStockEpcCollectDao;
+import com.lubin.dao.TakeStockSkuCollectDao;
+
+import java.util.List;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
+/**
+ * Created by HKR on 2017/2/21.
+ * 盘点明细页面（上传时清点数必须 = RFID数 + 条码数）
+ */
+public class StockTaskDetailsFragment extends FragmentBase implements IDataFragmentView<String> {
+
+    @BindView(R.id.check_task_real_point)
+    TextView checkTaskRealPoint;
+    @BindView(R.id.check_task_sku)
+    TextView checkTaskSku;
+    @BindView(R.id.check_task_epc)
+    TextView checkTaskEpc;
+    @BindView(R.id.check_task)
+    TextView checkTaskText;
+    @BindView(R.id.check_order)
+    TextView checkOrder;
+    private View mView;
+    public String checkTask;
+
+    StockTaskDetailsActivity mActivity;
+    ConfigTakeStockTackPresenterImpl mPresenter;
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        mView = inflater.inflate(R.layout.fragment_check_task_details, container, false);
+        ButterKnife.bind(this, mView);
+        mActivity = (StockTaskDetailsActivity) getActivity();
+        mPresenter = new ConfigTakeStockTackPresenterImpl(this);
+        initData();
+        return mView;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        mActivity.skuNum = 0;
+        mActivity.init();
+        initData();
+    }
+
+    private void initData() {
+        checkTaskRealPoint.setText(String.valueOf(mActivity.mCheckTask.getRealPoint()));
+        checkTaskText.setText(mActivity.mCheckTask.getName());
+        checkOrder.setText(mActivity.mTakeStockOrder.getCode());
+        checkTaskEpc.setText(String.valueOf(mActivity.epcNum));
+        checkTaskSku.setText(String.valueOf(mActivity.skuNum));
+    }
+
+    @OnClick({R.id.p_reset, R.id.p_start, R.id.sku_start})
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.p_reset:
+                if (Utils.getCurrentUser() != null) {
+                    mPresenter.getClearSkuTags(mActivity.mTakeStockOrder.getTakeStockId(), mActivity.mCheckTask.getCodeId());
+                } else {
+                    //未登录
+                    Intent login = new Intent(getActivity(), LoginActivity.class);
+                    login.putExtra("isAtNet", true);
+                    startActivityForResult(login, Configs.LOGIN);
+                }
+                break;
+            case R.id.p_start:
+                if (mActivity.mCheckTask != null) {
+                    Utils.setCurrentTask(mActivity.mCheckTask);
+                    Intent intent = new Intent(getActivity(), StockTakingActivity.class);
+                    startAnimActivity(intent);
+                }
+                break;
+            case R.id.sku_start:
+                if (mActivity.mCheckTask != null) {
+                    Utils.setCurrentTask(mActivity.mCheckTask);
+                    Intent intent1 = new Intent(getActivity(), StockTakingBySkuActivity.class);
+                    startAnimActivity(intent1);
+                }
+                break;
+        }
+    }
+
+    @Override
+    public void ShowData(String string) {
+        if (string.equals("S")) {
+            //唯一码
+            List<TakeStockEpcCollect> epcList = mActivity.epcDBOperator.getItemsByParameters(null, TakeStockEpcCollectDao.Properties.TaskId.eq(mActivity.mCheckTask.getId()));
+            //条码
+            List<TakeStockSkuCollect> skuList = mActivity.skuDBOperator.getItemsByParameters(null, TakeStockSkuCollectDao.Properties.TaskId.eq(mActivity.mCheckTask.getName()));
+            mActivity.epcDBOperator.deleteDatas(epcList);
+            mActivity.skuDBOperator.deleteDatas(skuList);
+            mActivity.skuNum = 0;
+            mActivity.init();
+            initData();
+        }
+    }
+}

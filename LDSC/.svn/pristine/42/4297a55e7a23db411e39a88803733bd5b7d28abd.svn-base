@@ -1,0 +1,160 @@
+package com.lide.app.presenter.binding;
+
+import com.google.gson.internal.LinkedTreeMap;
+import com.lide.app.bean.JsonToBean.BaseContainerBean;
+import com.lide.app.listener.OnLoadFinishListener;
+import com.lide.app.model.CreateModel;
+import com.lide.app.model.MInterface.IQueryModel;
+import com.lide.app.model.QueryModelImpl;
+import com.lide.app.model.UploadModel;
+import com.lide.app.ui.VInterface.IDataFragmentView;
+import com.lide.app.persistence.util.FormatUtils;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by lubin on 2016/11/24.
+ */
+
+public class BindingPresenter {
+
+    private final CreateModel createModel;
+    private final UploadModel uploadModel;
+    IDataFragmentView view;
+    IQueryModel queryModel;
+    private List multiBarcodes;
+
+    public BindingPresenter(IDataFragmentView view) {
+        this.view = view;
+        queryModel = new QueryModelImpl();
+        createModel = new CreateModel();
+        uploadModel = new UploadModel();
+    }
+    //判断该标签是否可以绑定
+    public void searchEpc(String key) {
+        view.startProgressDialog("搜索中...");
+        try {
+            queryModel.queryEpc(key, new OnLoadFinishListener() {
+                @Override
+                public void OnLoadFinish(Map<String, String> map) {
+                    if (map.get("statusCode").equals("200")) {
+                        BaseContainerBean result = null;
+                        try {
+                            result = FormatUtils.resultToBean(map.get("result"), BaseContainerBean.class);
+                            if (result.data.size() == 0) {
+                                view.ShowData(null);
+                                view.ShowToast("标签可绑定");
+                            } else {
+                                LinkedTreeMap linkedTreeMap = (LinkedTreeMap) result.data.get(0);
+                                view.ShowData(result.data);
+                                if (linkedTreeMap.get("barcode") != null) {
+                                    view.ShowToast("该标签已绑过商品条码");
+                                } else {
+                                    view.ShowToast("标签可绑定");
+                                }
+                            }
+                        } catch (Exception e) {
+                            view.showDialog(e.toString());
+                        }
+                    } else {
+                        view.showDialog(map.get("result"));
+                    }
+                    view.stopProgressDialog(null);
+                }
+            });
+        } catch (Exception e) {
+            view.showDialog(e.toString());
+        }
+    }
+    //判断一个集合的标签是否可以绑定
+    public synchronized void searchEpcList(final List<String> data) {
+        view.startProgressDialog("搜索中...");
+        try {
+            queryModel.queryEpcList(data, new OnLoadFinishListener() {
+                @Override
+                public void OnLoadFinish(Map<String, String> map) {
+                    if (map.get("statusCode").equals("200")) {
+                        BaseContainerBean result = null;
+                        try {
+                            result = FormatUtils.resultToBean(map.get("result"), BaseContainerBean.class);
+                            view.ShowData(result.data);
+                        } catch (Exception e) {
+                            view.showDialog(e.toString());
+                        }
+                    } else {
+                        view.showDialog(map.get("result"));
+                    }
+                    view.stopProgressDialog(null);
+                }
+            });
+        } catch (Exception e) {
+            view.showDialog(e.toString());
+        }
+    }
+    //查询该条码是否可以绑定
+    public void searchSku(final String key) {
+        view.startProgressDialog("搜索中...");
+        //获取sku信息
+        queryModel.querySku(key, new OnLoadFinishListener() {
+            @Override
+            public void OnLoadFinish(Map<String, String> map) {
+                if (map.get("statusCode").equals("200")) {
+                    BaseContainerBean result = null;
+                    try {
+                        result = FormatUtils.resultToBean(map.get("result"), BaseContainerBean.class);
+                        if (result == null || result.data.size() == 0) {
+                            view.ShowToast("该条码不存在数据库");
+                        } else {
+                            view.ShowData(result.data);
+                            //生成多条码ID
+                            createModel.createMultiBarcodeId(key, new OnLoadFinishListener() {
+                                @Override
+                                public void OnLoadFinish(Map<String, String> map) {
+                                    if (map.get("statusCode").equals("200")) {
+                                        try {
+                                            multiBarcodes = FormatUtils.arrayFromData(map.get("result"));
+                                            view.ShowToast("条码可绑定");
+                                        } catch (Exception e) {
+                                            view.showDialog(e.toString());
+                                        }
+                                    } else {
+                                        view.showDialog(map.get("result"));
+                                    }
+                                }
+                            });
+                        }
+                    } catch (Exception e) {
+                        view.showDialog(e.toString());
+                    }
+                } else {
+                    view.showDialog(map.get("result"));
+                }
+                view.stopProgressDialog(null);
+            }
+        });
+    }
+    //绑定接口
+    public void binding(final List<String> tags) {
+        view.startProgressDialog("绑定中...");
+        try {
+            uploadModel.binding(tags, ((LinkedTreeMap) multiBarcodes.get(0)).get("id").toString(), new OnLoadFinishListener() {
+                @Override
+                public void OnLoadFinish(Map<String, String> map) {
+                    if (map.get("statusCode").equals("200")) {
+                        view.ShowToast("绑定成功");
+                    } else {
+                        if (map.get("statusCode").equals("400")) {
+                            searchEpcList(tags);
+                        }
+                        view.showDialog(map.get("result"));
+                    }
+                    view.stopProgressDialog(null);
+                }
+            });
+        } catch (Exception e) {
+            view.showDialog(e.toString());
+        }
+    }
+
+}

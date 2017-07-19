@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TableRow
+        android:id="@+id/table_results"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:id="@+id/results_id"
+            android:layout_width="1dp"
+            android:layout_height="50dp"
+            android:layout_gravity="center"
+            android:layout_weight="4"
+            android:gravity="center"
+            android:padding="5dp"
+            android:text="#"
+            android:textColor="@android:color/black"
+            android:textSize="@dimen/text_size_middle" />
+
+
+        <TextView
+            android:id="@+id/results_sku"
+            android:layout_width="1dp"
+            android:layout_height="50dp"
+            android:layout_gravity="center"
+            android:layout_weight="7"
+            android:gravity="left|center_vertical"
+            android:padding="5dp"
+            android:text="条码"
+            android:textColor="@android:color/black"
+            android:textSize="@dimen/text_size_middle" />
+
+        <TextView
+            android:id="@+id/results_epc"
+            android:layout_width="1dp"
+            android:layout_height="50dp"
+            android:layout_gravity="center"
+            android:layout_weight="7"
+            android:gravity="left|center_vertical"
+            android:padding="5dp"
+            android:text="EPC"
+            android:textColor="@android:color/black"
+            android:textSize="@dimen/text_size_middle" />
+
+        <TextView
+            android:id="@+id/results_state"
+            android:layout_width="1dp"
+            android:layout_height="50dp"
+            android:layout_gravity="center"
+            android:layout_weight="4"
+            android:gravity="center"
+            android:padding="5dp"
+            android:text="状态"
+            android:textColor="@android:color/black"
+            android:textSize="@dimen/text_size_middle" />
+    </TableRow>
+
+    <View
+        android:id="@+id/view_bg"
+        android:layout_width="match_parent"
+        android:layout_height="1px"
+        android:background="@color/shadow" />
+</LinearLayout>

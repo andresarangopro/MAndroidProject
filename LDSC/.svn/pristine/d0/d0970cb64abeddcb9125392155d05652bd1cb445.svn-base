@@ -1,0 +1,27 @@
+package com.lide.app.presenter.takeStock;
+
+import com.lide.app.model.EPCCollectModel;
+import com.lide.app.ui.VInterface.IDataFragmentView;
+
+public class EPCPresenterImpl {
+
+    IDataFragmentView view;
+    EPCCollectModel model;
+
+    public EPCPresenterImpl(IDataFragmentView view) {
+        this.view = view;
+        this.model = new EPCCollectModel();
+    }
+
+    public void showEPCList(String type) {
+        view.ShowData(model.getEpcList(type));
+    }
+
+    public void searchDetailEpc(String keyWord) {
+        view.ShowData(model.searchDetailEpc(keyWord));
+    }
+
+    public void writeToSDCardFile() {
+        view.showDialog("数据已放入sd的“思创理德”文件夹里面！");
+    }
+}

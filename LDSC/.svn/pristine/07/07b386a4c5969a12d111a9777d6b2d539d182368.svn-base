@@ -1,0 +1,172 @@
+package com.lide.app.ui;
+
+import android.content.Intent;
+import android.os.AsyncTask;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.lide.app.R;
+import com.lide.app.config.Configs;
+import com.lide.app.persistence.util.SPUtils;
+import com.lide.app.persistence.util.Utils;
+import com.lide.app.service.IScanService;
+import com.lide.app.service.ScanServiceControl;
+import com.lide.app.ui.detection.DetectionActivity;
+import com.lide.app.ui.inventory.InventoryActivity;
+import com.lide.app.ui.takeStock.urentry.ControlCheckTaskActivity;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
+/**
+ * Created by huangjianxionh on 2017/1/4.
+ */
+public class EnterActivity extends BaseActivity {
+
+    @BindView(R.id.title_warehouse)
+    TextView titleWarehouse;
+    private View mView;
+    private boolean flag = false;
+    private IScanService scanService = ScanServiceControl.getScanService();
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.main_layout);
+        ButterKnife.bind(this);
+        startUHFWithCW();
+        openBarCodeReader();
+        showDialog("温馨提示：建议保留7-15天完成的业务单据，" +
+                "在业务单据列表向左滑动删除、审核业务单据。");
+    }
+
+    @OnClick({R.id.main_inbound, R.id.main_delivery, R.id.main_bind, R.id.main_check, R.id.main_inventory, R.id.main_detection, R.id.main_find, R.id.main_setting, R.id.out_login})
+    public void onClick(View view) {
+        Intent intent = new Intent(this, MainActivity.class);
+        switch (view.getId()) {
+            case R.id.main_inbound:
+                intent.putExtra("item", "0");
+                startAnimActivity(intent);
+                break;
+            case R.id.main_delivery:
+                intent.putExtra("item", "1");
+                startAnimActivity(intent);
+                break;
+            case R.id.main_check:
+                if (false) {
+                    //普通版
+                    intent.putExtra("item", "2");
+                    startAnimActivity(intent);
+                } else {
+                    //url特定版
+                    Intent intent1 = new Intent(this, ControlCheckTaskActivity.class);
+                    startAnimActivity(intent1);
+                }
+
+                break;
+            case R.id.main_bind:
+                intent.putExtra("item", "3");
+                startAnimActivity(intent);
+                break;
+            case R.id.main_detection:
+                startAnimActivity(new Intent(EnterActivity.this, DetectionActivity.class));
+                break;
+            case R.id.main_find:
+                intent.putExtra("item", "4");
+                startAnimActivity(intent);
+                break;
+            case R.id.main_setting:
+                startAnimActivity(new Intent(EnterActivity.this, SettingActivity.class));
+                break;
+            case R.id.out_login:
+                Intent login = new Intent(EnterActivity.this, LoginActivity.class);
+                login.putExtra("isAtNet", true);
+                startActivityForResult(login, Configs.LOGIN);
+                Utils.setCurrentTask(null);
+                break;
+            case R.id.main_inventory:
+                startAnimActivity(new Intent(EnterActivity.this, InventoryActivity.class));
+                break;
+        }
+
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (firstPress + 2000 > System.currentTimeMillis()) {
+            //2秒钟内连续按下"back"键
+            super.onBackPressed();
+            finish();
+        } else {
+            ShowToast("再按一次退出");
+            firstPress = System.currentTimeMillis();
+        }
+//        super.onBackPressed();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        openBarCodeReader();
+        scanService.closeReader();
+    }
+
+    private void startUHFWithCW() {
+        try {
+            scanService.init(this);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        new InitTask().execute();
+    }
+
+    public void openBarCodeReader() {
+
+        SPUtils.put(this, "barCodeReaderMode", 2);
+
+        if (flag) {
+            boolean close = scanService.closeBarcodeReader();
+            if (close) {
+                flag = false;
+            } else {
+                showDialog("关闭条码扫描失败");
+            }
+        } else {
+
+            boolean open = scanService.openBarcodeReader(this);
+            if (open) {
+                flag = true;
+            } else {
+                showDialog("开启条码扫描失败");
+            }
+
+        }
+    }
+
+    public class InitTask extends AsyncTask<String, Integer, Boolean> {
+
+
+        @Override
+        protected Boolean doInBackground(String... params) {
+            return scanService.openReader();
+        }
+
+        @Override
+        protected void onPostExecute(Boolean result) {
+            if (!result) {
+                Toast.makeText(EnterActivity.this, "启动扫描头失败", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (Utils.getWareHouseName() != null) {
+            titleWarehouse.setText(Utils.getWareHouseName());
+        }
+    }
+}

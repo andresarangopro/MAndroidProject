@@ -1,0 +1,34 @@
+package com.lide.app.model.MInterface;
+
+import com.lide.app.bean.Container.FindEpcMessageForSku;
+import com.lide.app.bean.JsonToBean.BaseContainerBean;
+import com.lide.app.bean.JsonToBean.Container.Warehouse;
+import com.lide.app.bean.JsonToBean.SkuList;
+import com.lide.app.listener.OnLoadFinishListener;
+
+import java.util.List;
+
+/**
+ * Created by lubin on 2016/11/2.
+ */
+
+public interface IQueryModel {
+
+    void querySkuList(String barcode, final OnLoadFinishListener listener);
+
+    List<String> resultToList(String result);
+
+    boolean hasNextSkuList();
+
+    void queryEpcListOfBarcode(String barcode, final OnLoadFinishListener listener);
+
+    void queryEpc(String epc, final OnLoadFinishListener listener) throws Exception;
+
+    void queryEpcList(List<String> epcList, final OnLoadFinishListener listener) throws Exception;
+
+    List<FindEpcMessageForSku> resultToEpcMessage(String result);
+
+    void queryWarehouseList(String code, final OnLoadFinishListener listener) throws Exception;
+
+    void querySku(String barcode, final OnLoadFinishListener listener);
+}

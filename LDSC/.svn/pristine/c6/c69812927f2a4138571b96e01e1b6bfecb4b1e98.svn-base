@@ -1,0 +1,285 @@
+package com.lide.app.ui.takeStock;
+
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.view.animation.LinearInterpolator;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import com.google.gson.internal.LinkedTreeMap;
+import com.lide.app.R;
+import com.lide.app.listener.OnFinishListener;
+import com.lide.app.persistence.util.SoundUtils;
+import com.lide.app.persistence.util.Utils;
+import com.lide.app.presenter.ScanPresenter;
+import com.lide.app.service.DbService;
+import com.lide.app.ui.FragmentBase;
+import com.lide.app.ui.VInterface.IDataFragmentView;
+import com.lubin.bean.TakeStockEpcCollect;
+import com.lubin.bean.TakeStockTask;
+
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
+/**
+ * @author DaiJiCheng
+ * @time 2016/7/19  9:32
+ * @desc ${扫描标签信息界面}
+ */
+public class StockReadFragment extends FragmentBase implements IDataFragmentView<List<LinkedTreeMap>> {
+
+
+    @BindView(R.id.tv_num)
+    TextView tvNum;
+    @BindView(R.id.tv_open_close)
+    TextView tvOpenClose;
+    @BindView(R.id.btn_diff)
+    Button btnDiff;
+    @BindView(R.id.btn_result)
+    Button btnResult;
+    @BindView(R.id.btn_upload)
+    Button btnUpload;
+    @BindView(R.id.iv_rotate)
+    ImageView ivRotate;
+    @BindView(R.id.iv_close_open)
+    ImageView ivCloseOpen;
+
+    private StockTakingActivity mActivity;
+    private Animation anim;
+    private int order;
+    private Timer mTimer;
+    private TakeStockTask currentTask;
+    private DbService db;
+    private ScanPresenter scanPresenter;
+    private LinkedList<String> mData = new LinkedList();
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_stock_read, container, false);
+        ButterKnife.bind(this, view);
+        initData();
+        initTask();
+        InitSanPresenter();
+        return view;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        scanPresenter.setMode(1);
+        scanPresenter.setReadDataModel(0);
+        scanPresenter.setCurrentSetting(ScanPresenter.Setting.stockRead);
+        scanPresenter.setListenerProtectModel(new OnFinishListener() {
+            @Override
+            public void OnFinish(String data) {
+                order++;
+                SoundUtils.play(1);
+                tvNum.setText(String.valueOf(scanPresenter.getNum()));
+                mData.add(data);
+            }
+        });
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        scanPresenter.stopReadRfid();
+        scanPresenter.setMode(0);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        saveData();
+        if (mTimer != null) {
+            mTimer.cancel();
+        }
+    }
+
+    private void initData() {
+        mActivity = (StockTakingActivity) getActivity();
+        currentTask = Utils.getCurrentTask();
+        db = DbService.getInstance(getActivity());
+
+        order = 0;
+        anim = AnimationUtils.loadAnimation(getActivity(), R.anim.san_anim);
+        anim.setInterpolator(new LinearInterpolator());
+        anim.setFillAfter(true);
+        anim.setFillBefore(false);
+        anim.setFillEnabled(false);
+    }
+
+    private void initTask() {
+        mTimer = new Timer();
+        mTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if (order > 10) {
+                    setAnimDuration(1000);
+                } else if (order >= 0 && order <= 10) {
+                    setAnimDuration(5000);
+                }
+            }
+        }, 0, 500);
+    }
+
+    @OnClick({R.id.btn_diff, R.id.iv_close_open, R.id.btn_result, R.id.btn_upload})
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.iv_close_open:
+                read();
+                break;
+            case R.id.btn_result:
+                Intent epcActivity = new Intent(getActivity(), EpcCollectActivity.class);
+                startActivity(epcActivity);
+                break;
+            case R.id.btn_diff:
+                Intent diffActivity = new Intent(getActivity(), QueryDiffActivity.class);
+                diffActivity.putExtra("tag", "diff");
+                mActivity.startNewActivity(diffActivity);
+                break;
+            case R.id.btn_upload:
+                showDialog();
+                break;
+
+        }
+    }
+
+    public void showDialog() {
+
+        builder.setTitle("上传");
+        builder.setMessage("有新数据" + scanPresenter.getOut().size() + "条");
+        builder.setPositiveButton("全部上传", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                if (scanPresenter.getMap().size() != 0) {
+                    UpLoadCollectActivity.isUploadAll = true;
+                    Intent upLoadActivity = new Intent(getActivity(), UpLoadCollectActivity.class);
+                    upLoadActivity.putExtra("tag", "upload");
+                    mActivity.startNewActivity(upLoadActivity);
+                }
+            }
+        });
+        builder.setNegativeButton("上传新数据", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                if (scanPresenter.getOut().size() != 0) {
+                    UpLoadCollectActivity.isUploadAll = false;
+                    Intent upLoadActivity = new Intent(getActivity(), UpLoadCollectActivity.class);
+                    upLoadActivity.putExtra("tag", "upload");
+                    mActivity.startNewActivity(upLoadActivity);
+                }
+            }
+        });
+        builder.show();
+    }
+
+    //按钮失效
+    private void setViewEnabled(boolean enabled) {
+        btnDiff.setEnabled(enabled);
+        btnResult.setEnabled(enabled);
+        btnUpload.setEnabled(enabled);
+        mActivity.setViewEnabled(enabled);
+    }
+
+    //开始扫描
+    public void read() {
+        if (tvOpenClose.getText().equals("点击开始")) {
+            ivRotate.setVisibility(View.VISIBLE);
+            ivRotate.setAnimation(anim);
+            setViewEnabled(false);
+            scanPresenter.startReadRfid();
+            tvOpenClose.setText("点击结束");
+            mActivity.setTitleText("正在读取标签....");
+        } else {
+            ivRotate.setVisibility(View.GONE);
+            ivRotate.clearAnimation();
+            setViewEnabled(true);
+            scanPresenter.stopReadRfid();
+            if (mData.size() > 0) {
+                saveData();
+            }
+            tvOpenClose.setText("点击开始");
+            mActivity.setTitleText("采集界面");
+        }
+    }
+
+    //初始化服务数据
+    private void InitSanPresenter() {
+        scanPresenter = new ScanPresenter(this);
+        List<TakeStockEpcCollect> takeStockEpcCollects = db.queryCollect(currentTask.getId());
+        List<String> all = new ArrayList<>();
+        List<String> out = new LinkedList<>();
+
+        for (TakeStockEpcCollect takeStockEpcCollect : takeStockEpcCollects) {
+            if (!takeStockEpcCollect.getIsUpload()) out.add(takeStockEpcCollect.getEpc());
+            all.add(takeStockEpcCollect.getEpc());
+        }
+        scanPresenter.initData();
+        scanPresenter.initMap(all);
+        scanPresenter.initOut(out);
+        tvNum.setText(String.valueOf(scanPresenter.getNum()));
+
+    }
+
+    @Override
+    public void ShowData(final List<LinkedTreeMap> linkedTreeMaps) {
+
+    }
+
+    public void saveData() {
+        startProgressDialog("保存中...");
+        new Runnable() {
+            @Override
+            public void run() {
+                List<TakeStockEpcCollect> takeStockEpcCollectList = createCollectList();
+                db.saveCollectLists(takeStockEpcCollectList);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        stopProgressDialog("保存成功");
+                    }
+                });
+            }
+
+            private List<TakeStockEpcCollect> createCollectList() {
+                List<TakeStockEpcCollect> takeStockEpcCollects = new ArrayList<>();
+                for (String next : mData) {
+                    TakeStockEpcCollect takeStockEpcCollect = new TakeStockEpcCollect();
+                    takeStockEpcCollect.setEpc(next);
+                    takeStockEpcCollect.setIsUpload(false);
+                    takeStockEpcCollect.setTaskId(String.valueOf(currentTask.getId()));
+                    takeStockEpcCollects.add(takeStockEpcCollect);
+                }
+                mData.clear();
+                return takeStockEpcCollects;
+            }
+
+        }.run();
+    }
+
+    private void setAnimDuration(int durationMillis) {
+        if (anim.getDuration() != durationMillis) {
+            anim.setDuration(durationMillis);
+            anim.reset();
+        }
+        order = 0;
+    }
+}
+

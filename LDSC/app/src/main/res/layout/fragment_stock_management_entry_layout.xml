@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+              android:background="@color/white"
+              android:orientation="vertical">
+
+    <ScrollView
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="center">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+
+            <Button
+                android:id="@+id/download_goods_order"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/selector_inbound_download_btn"
+                android:gravity="bottom"
+                android:padding="10dp"
+                android:text="下载单据"
+                android:textColor="@drawable/selector_color_text"
+                android:textSize="@dimen/font_big"/>
+
+
+            <Button
+                android:id="@+id/receive_goods_order"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/selector_out_bound_download_btn"
+                android:gravity="bottom"
+                android:padding="10dp"
+                android:text="按单收货"
+                android:textColor="@drawable/selector_color_text"
+                android:textSize="@dimen/font_big"/>
+
+            <Button
+                android:id="@+id/receive_goods_box"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/selector_inbound_box_btn"
+                android:gravity="bottom"
+                android:padding="10dp"
+                android:text="按箱收货"
+                android:textColor="@drawable/selector_color_text"
+                android:textSize="@dimen/font_big"/>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</LinearLayout>

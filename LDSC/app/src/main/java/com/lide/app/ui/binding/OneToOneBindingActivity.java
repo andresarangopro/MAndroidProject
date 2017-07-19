@@ -1,0 +1,469 @@
+package com.lide.app.ui.binding;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.google.gson.internal.LinkedTreeMap;
+import com.lide.app.R;
+import com.lide.app.listener.OnFinishListener;
+import com.lide.app.persistence.util.SoundUtils;
+import com.lide.app.persistence.util.Utils;
+import com.lide.app.presenter.ScanPresenter;
+import com.lide.app.presenter.binding.BindingPresenter;
+import com.lide.app.ui.BaseActivity;
+import com.lide.app.ui.LoginActivity;
+import com.lide.app.ui.VInterface.IDataFragmentView;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
+/**
+ * Created by lubin on 2016/11/24.
+ */
+
+public class OneToOneBindingActivity extends BaseActivity implements IDataFragmentView<List<LinkedTreeMap>> {
+
+
+    @BindView(R.id.tv_one_to_one)
+    TextView tvOneToOne;
+    @BindView(R.id.tb_one_to_one)
+    Toolbar tbOneToOne;
+    @BindView(R.id.et_tag)
+    EditText etTag;
+    @BindView(R.id.et_barcode)
+    EditText etBarcode;
+    @BindView(R.id.et_epc)
+    TextView tvEpc;
+    @BindView(R.id.tv_sku)
+    TextView tvSku;
+    @BindView(R.id.tv_product_code)
+    TextView tvProductCode;
+    @BindView(R.id.tv_product_name)
+    TextView tvProductName;
+    @BindView(R.id.tv_error_text)
+    TextView tvErrorText;
+    @BindView(R.id.scroll_err_text)
+    ScrollView scrollErrText;
+    @BindView(R.id.btn_read_rfid)
+    Button btnReadRfid;
+    @BindView(R.id.btn_scan_barcode)
+    Button btnScanBarcode;
+    @BindView(R.id.btn_binding)
+    Button btnBinding;
+    @BindView(R.id.ll_container)
+    LinearLayout llContainer;
+    @BindView(R.id.tv_addition_succeed)
+    LinearLayout tvAdditionSucceed;
+
+
+    private ScanPresenter scanPresenter;
+    private BindingPresenter bindingPresenter;
+    private List<String> mData = new ArrayList<>();
+    private Timer mTimer;
+    StringBuffer sb = new StringBuffer();
+    String currentBarcode = null;
+    String currentEpc = null;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
+        setContentView(R.layout.activity_one_to_one);
+        ButterKnife.bind(this);
+        initView();
+
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        initScanPresenter();
+        tvOneToOne.setText("一对一绑定");
+        tbOneToOne.setTitle("");
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        scanPresenter.setMode(0);
+        scanPresenter.stopReadRfid();
+        scanPresenter.removeListener();
+        scanPresenter.setReadDataModel(0);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mTimer.cancel();
+    }
+
+    private void initScanPresenter() {
+        scanPresenter = new ScanPresenter(this);
+        scanPresenter.initData();
+        scanPresenter.setReadDataModel(1);
+        scanPresenter.setMode(1);
+        scanPresenter.setCurrentSetting(ScanPresenter.Setting.binding);
+        scanPresenter.setListener(new OnFinishListener() {
+            @Override
+            public void OnFinish(final String data) {
+                SoundUtils.play(1);
+                if (etTag.hasFocus()) {
+                    mData.add(data);
+                }
+                if (etBarcode.hasFocus()) {
+                    etBarcode.setText(data);
+                    bindingPresenter.searchSku(data);
+                }
+            }
+        });
+        bindingPresenter = new BindingPresenter(this);
+    }
+
+    public void initView() {
+        setSupportActionBar(tbOneToOne);
+
+        tbOneToOne.setNavigationIcon(R.mipmap.back_login);
+        tbOneToOne.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+            }
+        });
+
+        etTag.setImeOptions(EditorInfo.IME_ACTION_SEND);
+        etTag.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (event != null)
+                    if (event.getAction() == KeyEvent.ACTION_UP) return true;
+                if (actionId == EditorInfo.IME_ACTION_SEND || actionId == 0) {
+                    if (etTag.getText().toString().equals("")) {
+                        showDialog("请输入标签~");
+                    } else {
+                        bindingPresenter.searchEpc(etTag.getText().toString());
+                    }
+                    return true;
+                }
+                return false;
+            }
+        });
+        //获取到焦点，就切换模式
+        etTag.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (hasFocus) {
+                    if (scanPresenter != null)
+                        scanPresenter.setMode(1);
+                    setCurrentModel(0);
+                }
+            }
+        });
+        etBarcode.setImeOptions(EditorInfo.IME_ACTION_SEND);
+        etBarcode.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (event != null)
+                    if (event.getAction() == KeyEvent.ACTION_UP) return true;
+                if (actionId == EditorInfo.IME_ACTION_SEND || actionId == 0) {
+                    if (etBarcode.getText().toString().equals("")) {
+                        showDialog("请输入条码~");
+                    } else {
+                        bindingPresenter.searchSku(etBarcode.getText().toString());
+                    }
+                    return true;
+                }
+                return false;
+            }
+        });
+        //获取到焦点，就切换模式
+        etBarcode.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (hasFocus) {
+                    scanPresenter.setMode(2);
+                    setCurrentModel(1);
+                }
+            }
+        });
+
+        mTimer = new Timer();
+        tvAdditionSucceed.setVisibility(View.INVISIBLE);
+
+        setCurrentModel(0);
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == 138) {
+            if (event.getRepeatCount() == 0) {
+                if (etBarcode.hasFocus()) {
+                    scanService.scanBarcode();
+                }
+                return true;
+            }
+        }
+        if (keyCode == 5 || keyCode == 120) {
+            if (event.getRepeatCount() == 0) {
+                if (etTag.hasFocus()) {
+                    readOrClose();
+                }
+                return true;
+            }
+        }
+        if (keyCode == 6) {
+            if (event.getRepeatCount() == 0) {
+                if (!etBarcode.hasFocus() && !etTag.hasFocus())
+                    binding();
+                return true;
+            }
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
+    private void readOrClose() {
+        if (Utils.getApiKey() == null) {
+            Intent intent = new Intent(this, LoginActivity.class);
+            intent.putExtra("isAtNet", true);
+            startAnimActivity(intent);
+            return;
+        }
+
+        try {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (btnReadRfid.getText().equals("读取")) {
+                        scanPresenter.startReadRfid();
+                        btnReadRfid.setText("停止");
+                        btnReadRfid.setBackground(redBackground);
+                        tvAdditionSucceed.setVisibility(View.INVISIBLE);
+                        //开始定时器，定时分析数据
+                        mTimer = new Timer();
+                        mTimer.schedule(new TimerTask() {
+                            @Override
+                            public void run() {
+                                //如果采集到了15个数据以上就停止扫描
+                                if (mData.size() > 15) {
+                                    ShowToast("扫到多个标签~");
+                                    mData.clear();
+                                    readOrClose();
+                                    //如果没有采集到数据继续采集
+                                } else if (mData.size() == 0) {
+                                    ShowToast("没有扫描到标签~");
+                                    mData.clear();
+                                } else {
+                                    runOnUiThread(new TimerTask() {
+                                        @Override
+                                        public void run() {
+                                            //将采集到的数据集合，分析出最近的标签，通过API检测是否存在后端数据库中
+                                            String nearestEpc = scanPresenter.searchNearestEpc(mData);
+                                            if (nearestEpc != null) {
+                                                etTag.setText(nearestEpc);
+                                                bindingPresenter.searchEpc(nearestEpc);
+                                                readOrClose();
+                                            }
+                                            mData.clear();
+                                        }
+                                    });
+                                }
+                            }
+                        }, 0, 1000);
+                    } else {
+                        //关闭读写器，还有定时器
+                        mTimer.cancel();
+                        if (mToast != null) mToast.cancel();
+                        scanPresenter.stopReadRfid();
+                        btnReadRfid.setText("读取");
+                        btnReadRfid.setBackground(commonBackground);
+                    }
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    //展示presenter返回的数据
+    public void ShowData(List<LinkedTreeMap> linkedTreeMaps) {
+        if (linkedTreeMaps == null) {
+            tvEpc.setText(etTag.getText().toString());
+            tvProductName.setText("");
+            tvProductCode.setText("");
+            tvSku.setText("");
+            return;
+        }
+
+        LinkedTreeMap linkedTreeMap = linkedTreeMaps.get(0);
+        if (etTag.hasFocus()) {
+            if (linkedTreeMap.get("epc") != null) {
+                tvEpc.setText(linkedTreeMap.get("epc").toString());
+            } else {
+                tvEpc.setText("");
+            }
+
+            if (linkedTreeMap.get("barcode") != null) {
+                tvSku.setText(linkedTreeMap.get("barcode").toString());
+            } else {
+                tvSku.setText("");
+            }
+
+            if (linkedTreeMap.get("productCode") != null) {
+                tvProductCode.setText(linkedTreeMap.get("productCode").toString());
+            } else {
+                tvProductCode.setText("");
+            }
+
+            if (linkedTreeMap.get("productName") != null) {
+                tvProductName.setText(linkedTreeMap.get("productName").toString());
+            } else {
+                tvProductName.setText("");
+            }
+        }
+
+    }
+
+    //根据presenter返回的字段，改变模式
+    public void ShowToast(final String text) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (text.equals("该标签已绑过商品条码")) {
+                    setErrorText(text);
+                    setCurrentModel(0);
+                    readOrClose();
+                } else if (text.equals("标签可绑定")) {
+                    currentEpc = etTag.getText().toString();
+                    //如果标签是可以绑定的，判断之前是不是采集条码，如果有就开始绑定
+                    //没有则切换到采集条码的模式
+                    if (etBarcode.getText().toString().equals("")) {
+                        setCurrentModel(1);
+                    } else {
+                        setCurrentModel(2);
+                        binding();
+                    }
+                } else if (text.equals("该条码不存在数据库")) {
+                    setErrorText(text);
+                } else if (text.equals("条码可绑定")) {
+                    //如果条码是可以绑定的，判断之前是否采集到标签，如果采集到了标签
+                    //就开始切换到绑定模式，没有则切换到采集标签的模式
+                    currentBarcode = etBarcode.getText().toString();
+                    if (etTag.getText().toString().equals("")) {
+                        setCurrentModel(0);
+                    } else {
+                        setCurrentModel(2);
+                        binding();
+                    }
+                } else if (text.equals("绑定成功")) {
+                    //绑定成功后，展示绑定信息，并且初始化控件
+                    etBarcode.setText("");
+                    etTag.setText("");
+                    sb.append(currentEpc + text + "\n");
+                    tvEpc.setText(currentEpc);
+                    tvSku.setText(currentBarcode);
+                    tvErrorText.setText(sb.toString());
+                    scrollErrText.fullScroll(ScrollView.FOCUS_DOWN);
+                    tvAdditionSucceed.setVisibility(View.VISIBLE);
+                    setCurrentModel(0);
+                }
+                Toast.makeText(OneToOneBindingActivity.this, text, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    //展示错误的信息
+    private void setErrorText(String text) {
+        String value = null;
+        if (etBarcode.hasFocus()) {
+            value = etBarcode.getText().toString();
+            etBarcode.setText("");
+        } else if (etTag.hasFocus()) {
+            value = etTag.getText().toString();
+            etTag.setText("");
+        }
+
+        sb.append(value + text + "\n");
+        tvErrorText.setText(sb.toString());
+
+        scrollErrText.fullScroll(ScrollView.FOCUS_DOWN);
+    }
+
+    //设置当前模式
+    public void setCurrentModel(int currentModel) {
+        switch (currentModel) {
+            case 0://读rfid模式
+                etTag.requestFocus();
+                btnReadRfid.setBackground(commonBackground);
+                btnReadRfid.setEnabled(true);
+                btnScanBarcode.setBackground(grayBackground);
+                btnScanBarcode.setEnabled(false);
+                btnBinding.setBackground(grayBackground);
+                btnBinding.setEnabled(false);
+                break;
+            case 1://扫描条码模式
+                etBarcode.requestFocus();
+                btnReadRfid.setBackground(grayBackground);
+                btnReadRfid.setEnabled(false);
+                if (btnReadRfid.getText().toString().equals("停止")) {
+                    btnReadRfid.setText("读取");
+                    scanPresenter.stopReadRfid();
+                }
+                btnScanBarcode.setBackground(commonBackground);
+                btnScanBarcode.setEnabled(true);
+                btnBinding.setBackground(grayBackground);
+                btnBinding.setEnabled(false);
+                break;
+            case 2://只需绑定模式
+                llContainer.requestFocus();
+                btnReadRfid.setBackground(grayBackground);
+                btnReadRfid.setEnabled(false);
+                btnScanBarcode.setBackground(grayBackground);
+                btnScanBarcode.setEnabled(false);
+                btnBinding.setBackground(commonBackground);
+                btnBinding.setEnabled(true);
+                break;
+        }
+    }
+
+    @OnClick({R.id.btn_read_rfid, R.id.btn_scan_barcode, R.id.btn_binding})
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.btn_read_rfid:
+                readOrClose();
+                break;
+            case R.id.btn_scan_barcode:
+                scanPresenter.startScanBarcode();
+                break;
+            case R.id.btn_binding:
+                binding();
+                break;
+        }
+    }
+
+    //开始绑定
+    private void binding() {
+        List<String> tags = new ArrayList<>();
+        tags.add(etTag.getText().toString());
+        bindingPresenter.binding(tags);
+    }
+
+}
+
+
+

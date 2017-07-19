@@ -1,0 +1,201 @@
+package com.lide.app.presenter.inbound;
+
+import com.google.gson.internal.LinkedTreeMap;
+import com.lide.app.bean.JsonToBean.BaseContainerBean;
+import com.lide.app.listener.OnLoadFinishListener;
+import com.lide.app.model.DownloadModel;
+import com.lide.app.model.QueryModelImpl;
+import com.lide.app.persistence.util.DBOperator;
+import com.lide.app.persistence.util.FormatUtils;
+import com.lide.app.ui.VInterface.IDataFragmentView;
+import com.lide.app.ui.inbound.InboundTransaction;
+import com.lubin.bean.InBoundOrder;
+import com.lubin.dao.InBoundOrderDao;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by lubin on 2017/2/15.
+ */
+
+public class SearchIBOrdersPresenter {
+
+    private final DBOperator<InBoundOrderDao, InBoundOrder> orderDBOperator;
+    private final DownloadModel downloadModel;
+    QueryModelImpl queryModel;
+    IDataFragmentView view;
+    String mCode = null;
+    BaseContainerBean result;
+
+    public SearchIBOrdersPresenter(IDataFragmentView view) {
+        this.view = view;
+        queryModel = new QueryModelImpl();
+        downloadModel = new DownloadModel();
+        orderDBOperator = InboundTransaction.getOrderDBOperator();
+    }
+
+    private int currentOrderListPage = 1;
+    private List<Integer> hasHandle = new ArrayList<>();
+
+    //批量查询入库单
+    public void querySearchOrders(String orderCode) {
+
+        if (mCode == null) {
+            mCode = orderCode;
+            currentOrderListPage = 1;
+        } else {
+            if (!orderCode.equals(mCode)) {
+                mCode = orderCode;
+                result = null;
+                hasHandle.clear();
+                currentOrderListPage = 1;
+            }
+        }
+
+        if (result != null) {
+            if (!result.hasNext) {
+                view.ShowToast("没有数据啦！");
+                return;
+            }
+        }
+        if (hasHandle.contains(currentOrderListPage)) {
+            return;
+        }
+        hasHandle.add(currentOrderListPage);
+        view.startProgressDialog("加载中...");
+        try {
+            queryModel.queryIBOderList("%" + orderCode + "%", currentOrderListPage, new OnLoadFinishListener() {
+                @Override
+                public void OnLoadFinish(Map<String, String> map) {
+                    if (map.get("statusCode").equals("200")) {
+                        try {
+                            result = FormatUtils.resultToBean(map.get("result"), BaseContainerBean.class);
+                        } catch (Exception e) {
+                            view.showDialog(e.getMessage());
+                            hasHandle.remove(currentOrderListPage);
+                        }
+                        if (result.data.size() == 0) {
+                            view.ShowToast("根据搜索到0条数据！");
+                        } else {
+                            view.ShowToast("根据搜索到" + result.data.size() + "条数据！");
+                            view.ShowData(result.data);
+                            currentOrderListPage++;
+                        }
+                    } else {
+                        view.showDialog(map.get("result"));
+                        hasHandle.remove(currentOrderListPage);
+                    }
+                    view.stopProgressDialog(null);
+                }
+            });
+        } catch (Exception e) {
+            view.showDialog(e.getMessage());
+            view.stopProgressDialog(null);
+            hasHandle.remove(currentOrderListPage);
+        }
+    }
+
+    //下载单明细
+    public void loadOrderDetail(final LinkedTreeMap linkedTreeMap) {
+        String Id = null;
+        if (linkedTreeMap.get("id") != null) {
+            Id = linkedTreeMap.get("id").toString();
+        } else {
+            return;
+        }
+        List<InBoundOrder> list = orderDBOperator.getItemByParameter
+                (InBoundOrderDao.Properties.OrderId, Id);
+        if (list.size() > 0) {
+            view.ShowToast("该单已下载过！");
+        } else {
+            view.startProgressDialog("下载中...");
+            try {
+                downloadModel.downloadIBOrderDetail(Id, new OnLoadFinishListener() {
+                    @Override
+                    public void OnLoadFinish(Map<String, String> map) {
+                        if (map.get("statusCode").equals("200")) {
+                            boolean isComplete = false;
+                            if (map.get("result") != null) {
+                                try {
+                                    isComplete = downloadModel.saveIBOrderDetail(linkedTreeMap, String.valueOf(map.get("result")));
+                                } catch (Exception e) {
+                                    view.showDialog(e.getMessage());
+                                }
+                            }
+                            if (isComplete) {
+                                view.ShowToast("下载完成");
+                            } else {
+                                view.ShowToast("下载失败");
+                            }
+                        } else {
+                            view.showDialog(map.get("result"));
+                        }
+                        view.stopProgressDialog(null);
+                    }
+                });
+            } catch (Exception e) {
+                view.showDialog(e.getMessage());
+            }
+        }
+    }
+
+    //批量下载单明细
+    public void loadOrderListDetail(List<LinkedTreeMap> linkedTreeMaps) {
+        if (linkedTreeMaps == null || linkedTreeMaps.size() == 0) {
+            return;
+        }
+        view.startProgressDialog("下载中...");
+        loadOrderDetail(linkedTreeMaps, 0);
+    }
+
+    private void loadOrderDetail(final List<LinkedTreeMap> linkedTreeMaps, final int index) {
+        String Id = null;
+        final LinkedTreeMap linkedTreeMap = linkedTreeMaps.get(index);
+        if (linkedTreeMap.get("id") != null) {
+            Id = linkedTreeMap.get("id").toString();
+        } else {
+            return;
+        }
+        List<InBoundOrder> list = orderDBOperator.getItemByParameter
+                (InBoundOrderDao.Properties.OrderId, Id);
+        if (list.size() > 0) {
+            if (linkedTreeMaps.size() > (index + 1))
+                loadOrderDetail(linkedTreeMaps, index + 1);
+            else
+                view.ShowToast("下载完成");
+        } else {
+            try {
+                downloadModel.downloadIBOrderDetail(Id, new OnLoadFinishListener() {
+                    @Override
+                    public void OnLoadFinish(Map<String, String> map) {
+                        if (map.get("statusCode").equals("200")) {
+                            if (map.get("result") != null) {
+                                try {
+                                    downloadModel.saveIBOrderDetail(linkedTreeMap, String.valueOf(map.get("result")));
+                                    int next = index + 1;
+                                    if (linkedTreeMaps.size() == next) {
+                                        view.stopProgressDialog(null);
+                                        view.ShowToast("下载完成");
+                                    } else {
+                                        loadOrderDetail(linkedTreeMaps, next);
+                                    }
+                                } catch (Exception e) {
+                                    view.stopProgressDialog(null);
+                                    view.ShowToast(e.getMessage());
+                                }
+                            }
+                        } else {
+                            view.stopProgressDialog(null);
+                            view.ShowToast(map.get("result"));
+                        }
+                    }
+                });
+            } catch (Exception e) {
+                view.stopProgressDialog(null);
+                view.ShowToast(e.getMessage());
+            }
+        }
+    }
+}

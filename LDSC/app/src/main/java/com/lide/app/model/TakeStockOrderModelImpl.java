@@ -1,0 +1,160 @@
+package com.lide.app.model;
+
+import com.google.gson.Gson;
+import com.lide.app.MApplication;
+import com.lide.app.bean.BeanToJson.TaskToJsonForId;
+import com.lide.app.bean.BeanToJson.TaskToJsonForSearch;
+import com.lide.app.bean.JsonToBean.TakeStockOrderList;
+import com.lide.app.listener.OnLoadFinishListener;
+import com.lide.app.model.MInterface.ITakeStockOrderModel;
+import com.lide.app.persistence.util.NetWorkUtil;
+import com.lide.app.persistence.util.StringUtils;
+import com.lide.app.persistence.util.Utils;
+import com.lide.app.service.DbService;
+import com.lubin.bean.TakeStockOrder;
+import com.lubin.bean.TakeStockTask;
+import com.lubin.bean.User;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class TakeStockOrderModelImpl implements ITakeStockOrderModel {
+    //api地址
+    public String apiUrl;
+    public DbService db;
+    private TakeStockTask currentTask;
+    private User currentUser;
+    private String apiKey;
+    private TakeStockOrder takeStockOrder;
+
+    public TakeStockOrderModelImpl() {
+        db = DbService.getInstance(MApplication.getInstance());
+        apiUrl = Utils.apiUrl;
+    }
+
+    /**
+     * 获取盘点单列表
+     * @param map
+     * @param listener
+     */
+    @Override
+    public void getTakeStockOrders(Map<String, String> map, final OnLoadFinishListener listener) {
+
+        NetWorkUtil.setListener(new OnLoadFinishListener() {
+            @Override
+            public void OnLoadFinish(Map<String, String> map) {
+                listener.OnLoadFinish(map);
+            }
+        });
+
+        NetWorkUtil.StartNetWork(map);
+    }
+
+    /**
+     * 组装请求盘点单列表的参数
+     * @return
+     */
+    public Map<String, String> getHashMapForOrders() {
+        Map<String, String> map = new HashMap<>();
+        currentUser = Utils.getCurrentUser();
+        //api方法
+        String apiMethod = "api/takeStockOrder/list";
+        String postUrl = apiUrl + apiMethod;
+
+        TaskToJsonForSearch search = new TaskToJsonForSearch();
+        search.orderByMethod = "DESC";
+        search.status = new ArrayList<>();
+        search.status.add("FIRST_COUNT");
+        search.status.add("SECOND_COUNT");
+        search.warehouseCode = currentUser.getWarehouseCode();
+        final String requestJsonData = new Gson().toJson(search);
+
+        apiKey = Utils.getApiKey();
+
+        map.put("postUrl", postUrl);
+        map.put("requestJsonData", requestJsonData);
+        map.put("apiKey", apiKey);
+
+        return map;
+    }
+
+    /**
+     * result转化盘点单List
+     * @param result
+     * @return
+     */
+    public List<TakeStockOrder> getOrders(String result) {
+        List<TakeStockOrder> takeStockOrders = new ArrayList<TakeStockOrder>();
+        TakeStockOrderList data = TakeStockOrderList.objectFromData(result);
+        if (data == null || data.getData() == null) {
+            return takeStockOrders;
+        }
+        for (TakeStockOrderList.DataBean order : data.getData()) {
+            TakeStockOrder mTakeStockOrder = null;
+            if (db.queryOrderByName(order.getCode()).size() != 0) {
+                mTakeStockOrder = db.queryOrderByName(order.getCode()).get(0);
+            } else {
+                mTakeStockOrder = new TakeStockOrder();
+            }
+            mTakeStockOrder.setCode(order.getCode());
+            mTakeStockOrder.setTakeStockId(order.getId());
+            mTakeStockOrder.setWarehouseName(order.getWarehouseName());
+            db.saveOrder(mTakeStockOrder);
+            takeStockOrders.add(mTakeStockOrder);
+        }
+        return takeStockOrders;
+    }
+
+    /**
+     *盘点任务绑定盘点单，返回id
+     * @param map
+     * @param listener
+     */
+    @Override
+    public void bindCheckTask(Map<String, String> map, final OnLoadFinishListener listener) {
+        NetWorkUtil.setListener(new OnLoadFinishListener() {
+            @Override
+            public void OnLoadFinish(Map<String, String> map) {
+
+                if (map.get("statusCode").equals("200")) {
+
+                    currentTask.setTakeStockOrder(takeStockOrder);
+                    currentTask.setOrderId(takeStockOrder.getId());
+                    currentTask.setCodeId(StringUtils.cutQuotation(map.get("result")));
+                    db.saveCheckTask(currentTask);
+                }
+
+                listener.OnLoadFinish(map);
+            }
+        });
+
+        NetWorkUtil.StartNetWork(map);
+    }
+
+
+    @Override
+    public Map<String, String> getHashMapForBing(TakeStockOrder takeStockOrder) {
+
+        this.takeStockOrder = takeStockOrder;
+
+        Map<String, String> map = new HashMap<>();
+
+        //api方法
+        String apiMethod = "api/takeStockOrder/" + takeStockOrder.getTakeStockId() + "/task/create";
+        String postUrl = apiUrl + apiMethod;
+
+        currentTask = Utils.getCurrentTask();
+        TaskToJsonForId taskToJson = new TaskToJsonForId();
+        taskToJson.taskCode = currentTask.getName();
+        final String requestJsonData = new Gson().toJson(taskToJson);
+
+        map.put("postUrl", postUrl);
+        map.put("requestJsonData", requestJsonData);
+        map.put("apiKey", apiKey);
+
+        return map;
+    }
+
+}

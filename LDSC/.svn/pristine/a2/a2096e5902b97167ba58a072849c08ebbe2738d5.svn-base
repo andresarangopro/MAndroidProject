@@ -1,0 +1,209 @@
+package com.lide.app.model;
+
+import com.google.gson.Gson;
+import com.lide.app.bean.BeanToJson.QueryIBOrderList;
+import com.lide.app.bean.BeanToJson.QueryWarehouseList;
+import com.lide.app.bean.BeanToJson.RequestForDeviceID;
+import com.lide.app.bean.BeanToJson.requestForEpcList;
+import com.lide.app.bean.Container.FindEpcMessageForSku;
+import com.lide.app.bean.JsonToBean.EpcList;
+import com.lide.app.bean.JsonToBean.SkuList;
+import com.lide.app.listener.OnLoadFinishListener;
+import com.lide.app.model.MInterface.IQueryModel;
+import com.lide.app.persistence.util.NetWorkUtil;
+import com.lide.app.persistence.util.Utils;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by lubin on 2016/11/2.
+ */
+
+public class QueryModelImpl implements IQueryModel {
+
+    private int currentSkuPage = 1;
+    private String barcode = null;
+
+    //查找,根据key查找sku列表
+    public void querySkuList(String barcode, final OnLoadFinishListener listener) {
+
+        if (this.barcode != null && !this.barcode.equals(barcode)) {
+            currentSkuPage = 1;
+        }
+        this.barcode = barcode;
+
+        String apiMethod = "api/sku/list";
+        String postUrl = Utils.apiUrl + apiMethod;
+
+        requestForEpcList requestForEpcList = new requestForEpcList();
+        requestForEpcList.orderByField = "barcode";
+        requestForEpcList.orderByMethod = "ASC";
+        requestForEpcList.isPageable = true;
+        requestForEpcList.currentPage = currentSkuPage;
+        requestForEpcList.recordsPerPage = 10;
+        requestForEpcList.barcode = barcode;
+        String requestJsonData = new Gson().toJson(requestForEpcList);
+
+        currentSkuPage++;
+        NetWorkUtil.startNetWord(requestJsonData, postUrl, listener);
+    }
+
+    @Override
+    public List<String> resultToList(String result) {
+        SkuList skuList = SkuList.objectFromData(result);
+        List<String> datas = new ArrayList<>();
+        for (SkuList.DataBean bean : skuList.getData()) {
+            if (bean.getBarcode() == null) continue;
+            datas.add(bean.getBarcode());
+        }
+        if (!skuList.isHasNext()) currentSkuPage = -1;
+        return datas;
+    }
+
+    @Override
+    public boolean hasNextSkuList() {
+        return currentSkuPage == -1 ? false : true;
+    }
+
+    /**
+     * 商品条码列表
+     *
+     * @param barcode 编码
+     */
+    public void querySku(String barcode, final OnLoadFinishListener listener) {
+
+        String apiMethod = "api/sku/list";
+        String postUrl = Utils.apiUrl + apiMethod;
+
+        requestForEpcList requestForEpcList = new requestForEpcList();
+        requestForEpcList.barcode = barcode;
+        String requestJsonData = new Gson().toJson(requestForEpcList);
+
+        NetWorkUtil.startNetWord(requestJsonData, postUrl, listener);
+    }
+
+    //查找，根据key查找epc列表
+    public void queryEpcListOfBarcode(String barcode, final OnLoadFinishListener listener) {
+        String apiMethod = "api/skuTag/list";
+        String postUrl = Utils.apiUrl + apiMethod;
+
+        requestForEpcList requestForEpcList = new requestForEpcList();
+        requestForEpcList.orderByField = "barcode";
+        requestForEpcList.orderByMethod = "ASC";
+        requestForEpcList.barcode = barcode;
+        String requestJsonData = new Gson().toJson(requestForEpcList);
+
+        NetWorkUtil.startNetWord(requestJsonData, postUrl, listener);
+    }
+
+    public List<FindEpcMessageForSku> resultToEpcMessage(String result) {
+        List<FindEpcMessageForSku> datas = new ArrayList<>();
+        EpcList epcList = EpcList.objectFromData(result);
+        for (EpcList.DataBean bean : epcList.getData()) {
+            FindEpcMessageForSku epcMessageForSku = new FindEpcMessageForSku();
+            epcMessageForSku.setEpc(bean.getEpc());
+            epcMessageForSku.setNum(0);
+            datas.add(epcMessageForSku);
+        }
+        return datas;
+    }
+
+    public void queryEpc(String epc, final OnLoadFinishListener listener) throws Exception {
+        String apiMethod = "api/skuTag/list";
+        String postUrl = Utils.apiUrl + apiMethod;
+
+        requestForEpcList requestForEpcList = new requestForEpcList();
+        requestForEpcList.orderByField = "barcode";
+        requestForEpcList.orderByMethod = "ASC";
+        requestForEpcList.epc = epc;
+        String requestJsonData = new Gson().toJson(requestForEpcList);
+
+        NetWorkUtil.startNetWord(requestJsonData, postUrl, listener);
+    }
+
+    /**
+     * 商品标签列表
+     *
+     * @param epcList EPC 集合
+     */
+    public void queryEpcList(List<String> epcList, final OnLoadFinishListener listener) throws Exception {
+        String apiMethod = "api/skuTag/list";
+        String postUrl = Utils.apiUrl + apiMethod;
+
+        requestForEpcList requestForEpcList = new requestForEpcList();
+        requestForEpcList.orderByField = "barcode";
+        requestForEpcList.orderByMethod = "ASC";
+        requestForEpcList.epcList = epcList;
+        String requestJsonData = new Gson().toJson(requestForEpcList);
+
+        NetWorkUtil.startNetWord(requestJsonData, postUrl, listener);
+    }
+
+    private int currentWarehousePage = 1;
+    private String WarehouseCode = null;
+
+    //查找，根据key查找仓库列表
+    public void queryWarehouseList(String code, final OnLoadFinishListener listener) throws Exception {
+
+        if (WarehouseCode != null && !WarehouseCode.equals(code)) {
+            currentSkuPage = 1;
+        }
+        WarehouseCode = code;
+
+        String apiMethod = "api/warehouse/list";
+        String postUrl = Utils.apiUrl + apiMethod;
+
+        QueryWarehouseList queryWarehouseList = new QueryWarehouseList();
+        queryWarehouseList.code = code;
+        queryWarehouseList.isPageable = true;
+        queryWarehouseList.currentPage = currentWarehousePage;
+        queryWarehouseList.orderByField = "code";
+        queryWarehouseList.orderByMethod = "ASC";
+        queryWarehouseList.recordsPerPage = 10;
+        String requestJsonData = new Gson().toJson(queryWarehouseList);
+
+        currentWarehousePage++;
+        NetWorkUtil.startNetWord(requestJsonData, postUrl, listener);
+    }
+
+    //查找设备列表
+    public void queryDeviceList(String deviceCode, final OnLoadFinishListener listener) throws Exception {
+        String method = "api/device/deviceList";
+        String postUrl = Utils.apiUrl + method;
+
+        RequestForDeviceID requestForDeviceID = new RequestForDeviceID();
+        requestForDeviceID.code = deviceCode;
+
+        NetWorkUtil.startNetWord(new Gson().toJson(requestForDeviceID), postUrl, listener);
+    }
+
+    //根据单号获取入库单列表
+    public void queryIBOderList(String order, int currentOderListPage, final OnLoadFinishListener listener) throws Exception {
+        Map<String, String> map = new HashMap<>();
+        String method = "api/inboundOrder/list";
+        String postUrl = Utils.apiUrl + method;
+
+        QueryIBOrderList Data = new QueryIBOrderList();
+        Data.code = order;
+        Data.orderByField = "code";
+        Data.orderByMethod = "ASC";
+        Data.isPageable = true;
+        Data.currentPage = currentOderListPage;
+        Data.recordsPerPage = 10;
+        Data.statusCode = new ArrayList<>();
+        Data.statusCode.add("PROCESSING");
+        Data.statusCode.add("NEW");
+        Data.toWarehouseId = Utils.getCurrentUser().getWarehouseId();
+
+        String requestJsonData = new Gson().toJson(Data);
+
+        map.put("postUrl", postUrl);
+        map.put("requestJsonData", requestJsonData);
+        map.put("apiKey", Utils.getApiKey());
+
+        NetWorkUtil.startNetWord(requestJsonData, postUrl, listener);
+    }
+}

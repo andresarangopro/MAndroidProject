@@ -1,0 +1,28 @@
+package com.lubin.chj.modle.MInterface;
+
+import com.lubin.chj.Listener.OnNetReqFinishListener;
+import com.lubin.chj.bean.PcInfo;
+import com.lubin.chj.bean.jsonToBean.GetPcWZReturnBean;
+import com.lubin.chj.bean.jsonToBean.StoreReturn;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * @author DaiJiCheng
+ * @time 2016/9/21  16:32
+ * @desc ${TODD}
+ */
+public interface IStorePcModel {
+    void store(Map<String, Object> map, OnNetReqFinishListener listener);
+
+    Map<String, Object> getHashMap(List<PcInfo> pcInfos, String qyhm);
+
+    Map<String, Object> getHashMapPcMz(List<GetPcWZReturnBean.ListBean> pcInfos, String qyhm);
+
+    List<StoreReturn.ListBean> getListBean();
+
+    void GetPcWZ(String pchList, final OnNetReqFinishListener listener);
+
+    List<GetPcWZReturnBean.ListBean> getListPcWZBean();
+}

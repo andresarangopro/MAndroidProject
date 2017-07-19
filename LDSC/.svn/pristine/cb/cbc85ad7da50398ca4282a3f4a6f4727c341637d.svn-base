@@ -1,0 +1,339 @@
+package com.lide.app.service;
+
+import android.content.Context;
+import android.util.Log;
+
+import com.lide.app.MApplication;
+import com.lubin.bean.CheckTask;
+import com.lubin.bean.Collect;
+import com.lubin.bean.InBoundCase;
+import com.lubin.bean.InBoundDetail;
+import com.lubin.bean.InBoundOperate;
+import com.lubin.bean.InBoundOrder;
+import com.lubin.bean.Order;
+import com.lubin.bean.OutBoundOrder;
+import com.lubin.bean.SkuCollect;
+import com.lubin.bean.User;
+import com.lubin.dao.CheckTaskDao;
+import com.lubin.dao.CollectDao;
+import com.lubin.dao.DaoSession;
+import com.lubin.dao.InBoundCaseDao;
+import com.lubin.dao.InBoundDetailDao;
+import com.lubin.dao.InBoundOperateDao;
+import com.lubin.dao.InBoundOrderDao;
+import com.lubin.dao.OrderDao;
+import com.lubin.dao.OutBoundOrderDao;
+import com.lubin.dao.SkuCollectDao;
+import com.lubin.dao.UserDao;
+
+import org.greenrobot.greendao.Property;
+import org.greenrobot.greendao.query.QueryBuilder;
+
+import java.util.List;
+
+/**
+ * 用户操作类
+ * Created by cg on 2015/12/29.
+ */
+public class DbService {
+    private static final String TAG = DbService.class.getSimpleName();
+    private static DbService instance;
+    private static Context appContext;
+    private DaoSession mDaoSession;
+    private UserDao userDao;
+    private OrderDao orderDao;
+    private InBoundOrderDao inBoundOrderDao;
+    private InBoundCaseDao inBoundCaseDao;
+    private CheckTaskDao checkTaskDao;
+    private CollectDao collectDao;
+    private InBoundOperateDao inBoundOperateDao;
+    private SkuCollectDao skuCollectDao;
+    private InBoundDetailDao inBoundLinkDao;
+    private OutBoundOrderDao outBoundOrderDao;
+
+    private DbService() {
+    }
+
+    /**
+     * 采用单例模式
+     *
+     * @param context 上下文
+     * @return dbservice
+     */
+    public static DbService getInstance(Context context) {
+        if (instance == null) {
+            instance = new DbService();
+            if (appContext == null) {
+                appContext = context.getApplicationContext();
+            }
+            instance.mDaoSession = MApplication.getDaoSession(context);
+            instance.userDao = instance.mDaoSession.getUserDao();
+            instance.checkTaskDao = instance.mDaoSession.getCheckTaskDao();
+            instance.orderDao = instance.mDaoSession.getOrderDao();
+            instance.collectDao = instance.mDaoSession.getCollectDao();
+            instance.inBoundOperateDao = instance.mDaoSession.getInBoundOperateDao();
+            instance.inBoundOrderDao = instance.mDaoSession.getInBoundOrderDao();
+            instance.inBoundCaseDao = instance.mDaoSession.getInBoundCaseDao();
+            instance.skuCollectDao = instance.mDaoSession.getSkuCollectDao();
+            instance.inBoundLinkDao = instance.mDaoSession.getInBoundDetailDao();
+            instance.outBoundOrderDao = instance.mDaoSession.getOutBoundOrderDao();
+        }
+        return instance;
+    }
+
+    /**********************
+     * 用户类别
+     *********************************/
+
+    public List<User> queryUser(String appKey) {
+        QueryBuilder<User> qb = userDao.queryBuilder();
+        qb.where(UserDao.Properties.ApiKey.eq(appKey));
+        return qb.list();
+    }
+
+    public List<User> queryUserByName(String userName) {
+        QueryBuilder<User> qb = userDao.queryBuilder();
+        qb.where(UserDao.Properties.UserName.eq(userName));
+        return qb.list();
+    }
+
+    public List<User> loadAllUser() {
+        return userDao.loadAll();
+    }
+
+    public long saveUser(User user) {
+        return userDao.insertOrReplace(user);
+    }
+
+    /**********************
+     * 盘点单类别
+     *********************************/
+
+    public List<Order> queryOrderByName(String name) {
+        QueryBuilder<Order> qb = orderDao.queryBuilder();
+        qb.where(OrderDao.Properties.Code.eq(name));
+        return qb.list();
+    }
+
+    public long saveOrder(Order order) {
+        return orderDao.insertOrReplace(order);
+    }
+
+    /**********************
+     * 任务类别
+     *********************************/
+
+    public long saveCheckTask(CheckTask checkTask) {
+        return checkTaskDao.insertOrReplace(checkTask);
+    }
+
+    public List<CheckTask> getAllCheckTask() {
+        return checkTaskDao.loadAll();
+    }
+
+    public List<CheckTask> queryCheckTask(String name) {
+        QueryBuilder<CheckTask> qb = checkTaskDao.queryBuilder();
+        qb.where(CheckTaskDao.Properties.Name.eq(name));
+        return qb.list();
+    }
+
+    public List<CheckTask> queryCheckTaskByWarehouseCode(String warehouseCode) {
+        QueryBuilder<CheckTask> qb = checkTaskDao.queryBuilder();
+        qb.where(CheckTaskDao.Properties.WarehouseCode.eq(warehouseCode));
+        return qb.list();
+    }
+
+    public void deleteCheckTask(long id) {
+        checkTaskDao.deleteByKey(id);
+        Log.i(TAG, "delete");
+    }
+
+    public void saveCollectLists(final List<Collect> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        collectDao.insertOrReplaceInTx(list);
+    }
+
+    public void updateCollectList(final List<Collect> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        collectDao.updateInTx(list);
+    }
+
+    public List<Collect> queryCollect(String TakeStockTaskCode, boolean isUploading) {
+        QueryBuilder<Collect> qb = collectDao.queryBuilder();
+        qb.where(CollectDao.Properties.TakeStockTask.eq(TakeStockTaskCode), CollectDao.Properties.IsUploading.eq(isUploading));
+        return qb.list();
+    }
+
+    public List<Collect> queryCollect(String TakeStockTaskCode) {
+        QueryBuilder<Collect> qb = collectDao.queryBuilder();
+        qb.where(CollectDao.Properties.TakeStockTask.eq(TakeStockTaskCode));
+        return qb.list();
+    }
+
+    public void deleteCollectLists(final List<Collect> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        collectDao.deleteInTx(list);
+    }
+
+    /**********************
+     * 采集类别(sku)
+     *********************************/
+
+    public void saveSkuCollect(final SkuCollect skuCollect) {
+        if (skuCollect == null) {
+            return;
+        }
+        skuCollectDao.insertOrReplaceInTx(skuCollect);
+    }
+
+
+    public void deleteSkuCollect(final SkuCollect skuCollect) {
+        if (skuCollect == null) {
+            return;
+        }
+        skuCollectDao.deleteInTx(skuCollect);
+    }
+
+    public void updateSkuCollect(SkuCollect skuCollect) {
+        skuCollectDao.updateInTx(skuCollect);
+    }
+
+
+    public List<SkuCollect> querySkuCollectByTaskCode(String taskCode) {
+        QueryBuilder<SkuCollect> qb = skuCollectDao.queryBuilder();
+        qb.where(SkuCollectDao.Properties.TaskCode.eq(taskCode));
+        qb.orderDesc(SkuCollectDao.Properties.Date);
+        return qb.list();
+    }
+
+    public List<SkuCollect> querySkuCollectByOrderCode(String orderCode) {
+        QueryBuilder<SkuCollect> qb = skuCollectDao.queryBuilder();
+        qb.where(SkuCollectDao.Properties.OrderCode.eq(orderCode));
+        return qb.list();
+    }
+
+    public void deleteSkuCollectList(final List<SkuCollect> list) {
+        if (list == null || list.isEmpty()) {
+            return;
+        }
+        skuCollectDao.deleteInTx(list);
+    }
+
+    /**
+     * 入库单类别
+     */
+    public List<InBoundOrder> loadAllInBoundOrder() {
+        return inBoundOrderDao.queryBuilder().orderAsc(InBoundOrderDao.Properties.DateAtLocation).list();
+    }
+
+    public Boolean hasInBoundOrder(String OrderID) {
+        QueryBuilder<InBoundOrder> qb = inBoundOrderDao.queryBuilder();
+        qb.where(InBoundOrderDao.Properties.OrderId.eq(OrderID));
+        return qb.list().size() != 0;
+    }
+
+    public void saveInBoundOrder(InBoundOrder inBoundOrder) {
+        inBoundOrderDao.insertOrReplace(inBoundOrder);
+        Log.d("test", inBoundOrder.toString());
+    }
+
+    public List<InBoundOrder> queryInBoundOrder(String OrderId) {
+        QueryBuilder<InBoundOrder> qb = inBoundOrderDao.queryBuilder();
+        qb.where(InBoundOrderDao.Properties.OrderId.eq(OrderId));
+        return qb.list();
+    }
+
+    public List<InBoundOrder> queryInBoundOrderByWarehouseName(String ToWarehouseCode) {
+        QueryBuilder<InBoundOrder> qb = inBoundOrderDao.queryBuilder();
+        qb.where(InBoundOrderDao.Properties.ToWarehouseCode.eq(ToWarehouseCode));
+        return qb.list();
+    }
+
+    /**
+     * 入库箱类别
+     */
+    public void saveInBoundCase(InBoundCase inBoundCase) {
+        inBoundCaseDao.insertInTx(inBoundCase);
+    }
+
+    public List<InBoundCase> queryInBoundCase(String Case) {
+        QueryBuilder<InBoundCase> qb = inBoundCaseDao.queryBuilder();
+        qb.where(InBoundCaseDao.Properties.Code.eq(Case));
+        return qb.list();
+    }
+
+
+    /**
+     * 入库sku明细类别
+     */
+    public void saveInBoundLink(InBoundDetail inBoundDetail) {
+        inBoundLinkDao.insertOrReplaceInTx(inBoundDetail);
+    }
+
+    public List<InBoundDetail> queryInBoundLink(String barcode) {
+        QueryBuilder<InBoundDetail> qb = inBoundLinkDao.queryBuilder();
+        qb.where(InBoundDetailDao.Properties.Barcode.eq(barcode));
+        qb.orderAsc(InBoundDetailDao.Properties.Barcode);
+        return qb.list();
+    }
+
+    /**
+     * 入库明细类别
+     */
+    public void saveInBound(List<InBoundOperate> inBoundOperates) {
+        inBoundOperateDao.insertOrReplaceInTx(inBoundOperates);
+    }
+
+    public List<InBoundOperate> queryInBound(Long orderId, boolean isUploading) {
+        QueryBuilder<InBoundOperate> qb = inBoundOperateDao.queryBuilder();
+        qb.where(InBoundOperateDao.Properties.InBoundOrderId.eq(orderId)
+                , InBoundOperateDao.Properties.OperateQty.notEq(0)
+                , InBoundOperateDao.Properties.IsUpload.eq(isUploading)
+                , InBoundOperateDao.Properties.Barcode.isNull());
+
+        return qb.list();
+    }
+
+    public List<InBoundOperate> queryInBoundsByOrderId(Long orderId, String barcode) {
+        QueryBuilder<InBoundOperate> qb = inBoundOperateDao.queryBuilder();
+        qb.where(InBoundOperateDao.Properties.InBoundOrderId.eq(orderId)
+                , InBoundOperateDao.Properties.Barcode.eq(barcode)
+                , InBoundOperateDao.Properties.Epc.isNull());
+        return qb.list();
+    }
+
+    public List<InBoundOperate> queryInBoundsByCaseId(Long caseId, String barcode) {
+        QueryBuilder<InBoundOperate> qb = inBoundOperateDao.queryBuilder();
+        qb.where(InBoundOperateDao.Properties.InBoundCaseId.eq(caseId)
+                , InBoundOperateDao.Properties.Barcode.eq(barcode)
+                , InBoundOperateDao.Properties.Epc.isNull());
+        return qb.list();
+    }
+
+    /**
+     * 出库单类别
+     */
+    public void saveOutBoundOrder(OutBoundOrder outBoundOrder) {
+        outBoundOrderDao.saveInTx(outBoundOrder);
+    }
+
+    public List<OutBoundOrder> loadAllOutBoundOrder() {
+        return outBoundOrderDao.queryBuilder().orderAsc(OutBoundOrderDao.Properties.Create_time).list();
+    }
+
+    public List<CheckTask> getItemByParameter(Property name, String id) {
+        QueryBuilder qb = checkTaskDao.queryBuilder();
+        qb.where(name.eq(id));
+        List list = qb.list();
+        if (list != null) {
+            return list;
+        }
+        return null;
+    }
+}

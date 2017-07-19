@@ -1,0 +1,56 @@
+package com.lubin.chj.modle.addedModel;
+
+import android.util.Log;
+
+import com.lubin.chj.Listener.OnNetReqFinishListener;
+import com.lubin.chj.bean.jsonToBean.GetPcWZReturnBean;
+import com.lubin.chj.modle.MInterface.addInterface.IMovePC;
+import com.lubin.chj.utils.SoapUtil;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * @author DaiJiCheng
+ * @time 2017/1/22  13:43
+ * @desc ${移柜管理}
+ */
+public class MovePCModelImpl implements IMovePC {
+    @Override
+    public void MovePC(Map<String, Object> map, final OnNetReqFinishListener listener) {
+        SoapUtil.GetWebServiceData(map, new OnNetReqFinishListener() {
+            @Override
+            public void OnNetReqFinish(Map<String, Object> hashMap) {
+                Object result = hashMap.get("result");
+                Log.d("test","OnNetReqFinish-------->>>__>>" + result.toString());
+//                if (result != null) {
+//                    mGetPcWZReturnBean = GetPcWZReturnBean.objectFromData(result.toString());
+//                    hashMap.put("returnCode", mGetPcWZReturnBean.getReturnCode());
+//                    hashMap.put("returnMsg", mGetPcWZReturnBean.getReturnMsg());
+//                } else {
+//                    hashMap.put("returnCode", "9999");
+//                    hashMap.put("returnMsg", "网络请求失败");
+//                }
+                listener.OnNetReqFinish(hashMap);
+            }
+        });
+    }
+
+    @Override
+    public Map<String, Object> getHashMapForMovePC(String pchList, String qybh, String ignore) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("pchList", pchList);
+        map.put("qybh", qybh);
+        map.put("ignore", ignore);
+        map.put("rightID", "665c2c3f-38b6-4486-9d59-f92019b71f19");
+        map.put("doMethod", "MovePC");
+        return map;
+    }
+
+    @Override
+    public List<GetPcWZReturnBean.ListBean> GetMovePCBean() {
+        return null;
+       // return mGetPcWZReturnBean.getList();
+    }
+}

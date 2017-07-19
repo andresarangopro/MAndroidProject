@@ -1,0 +1,337 @@
+package com.lubin.chj.view.activity.Fragment;
+
+import android.content.DialogInterface;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.support.annotation.Nullable;
+import android.support.v7.app.AlertDialog;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.ListView;
+import android.widget.TextView;
+
+import com.lubin.chj.Listener.OnBroadCaseFinishListener;
+import com.lubin.chj.R;
+import com.lubin.chj.adapter.PickByDirectAdapter;
+import com.lubin.chj.bean.PcInfo;
+import com.lubin.chj.bean.jsonToBean.QueryPcReturn;
+import com.lubin.chj.presenter.IPresenter.IPickPresenter;
+import com.lubin.chj.presenter.PickPresenterImpl;
+import com.lubin.chj.service.BarcodeReceiver;
+import com.lubin.chj.service.ScanServiceWithUHF;
+import com.lubin.chj.view.activity.BaseActivity;
+import com.lubin.chj.view.activity.PickActivity;
+import com.lubin.chj.view.activity.VInterface.IPickView;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
+public class PickDirectFragment extends FragmentBase implements IPickView<List<QueryPcReturn.ListBean>> {
+    @BindView(R.id.lv_picking)
+    ListView lvPicking;
+    @BindView(R.id.tv_succeedNum)
+    TextView tvSucceedNum;
+    @BindView(R.id.tv_msg)
+    TextView tvMsg;
+    @BindView(R.id.cb_all)
+    CheckBox cbAll;
+    private View mView;
+    private ScanServiceWithUHF mService;
+    private List<QueryPcReturn.ListBean> mList = new ArrayList<>();
+    private PickByDirectAdapter mAdapter;
+    private List<Boolean> flags = new ArrayList<>();
+    private List<String> newDatas = new ArrayList<>();
+    private PickActivity mActivity;
+    private IPickPresenter mPresenter;
+    private Timer mTimer;
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        mView = inflater.inflate(R.layout.fragment_picking_direct, container, false);
+        ButterKnife.bind(this, mView);
+        mActivity = (PickActivity) getActivity();
+        mService = mActivity.mService;
+        mPresenter = new PickPresenterImpl(this);
+        initView();
+        initListView();
+        return mView;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        initTimer();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        mTimer = null;
+    }
+
+    public void clearData() {
+        mList.clear();
+        flags.clear();
+        newDatas.clear();
+        cbAll.setChecked(false);
+        tvSucceedNum.setText("0");
+        mAdapter.notifyDataSetChanged();
+    }
+
+    private void initView() {
+        cbAll.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                for (int i = 0; i < flags.size(); i++) {
+                    flags.set(i, isChecked);
+                    mAdapter.notifyDataSetChanged();
+                }
+            }
+        });
+
+    }
+
+    private void initListView() {
+        mAdapter = new PickByDirectAdapter(getActivity(), mList, flags);
+        lvPicking.setAdapter(mAdapter);
+        lvPicking.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                if (flags.get(position)) {
+                    flags.set(position, false);
+                } else {
+                    flags.set(position, true);
+                }
+                mAdapter.notifyDataSetChanged();
+            }
+        });
+    }
+
+    public void initService() {
+        mService.SetHandleFunc(msgHandler);// 设置回调函数
+        BarcodeReceiver.setListener(new OnBroadCaseFinishListener() {
+            @Override
+            public void onBroadCaseFinish(String data) {
+                addToList(data);
+            }
+        });
+    }
+
+    private void initTimer() {
+        mTimer = new Timer();
+        mTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                onScanStop();
+            }
+        }, 0, 2500);
+    }
+
+    private Handler msgHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            String str = msg.getData().getString("msg");
+            if (null == str || 0 == str.length())
+                return;
+            if (msg.what == ScanServiceWithUHF.MSG_EPC) { // 标签内容
+                String epc = str;
+                addToList(epc);
+            }
+        }
+    };
+
+    private void addToList(final String epcCount) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                String[] szInfo = epcCount.split(";");
+                String epc = szInfo[0];
+
+                int index = 0;
+                for (index = 0; index < mList.size(); index++) {
+                    QueryPcReturn.ListBean listBean = mList.get(index);
+                    // list中有此EPC
+                    if (epc.equals(listBean.getPch())) {
+                        break;
+                    }
+                }
+
+                if (index == mList.size()) {
+                    QueryPcReturn.ListBean listBean = new QueryPcReturn.ListBean();
+                    listBean.setPch(epc);
+                    mList.add(listBean);
+                    flags.add(index, false);
+                    newDatas.add(epc);
+                }
+                tvSucceedNum.setText(String.valueOf(mList.size()));
+                mAdapter.notifyDataSetChanged();
+                lvPicking.setSelection(lvPicking.getCount() - 1);
+            }
+        });
+    }
+
+    @Override
+    public void ShowDialog(String result) {
+        mActivity.ShowDialog(result);
+    }
+
+    @Override
+    public void ShowPc(final List<QueryPcReturn.ListBean> list) {
+        if (list.size() == 0) return;
+        runOnUiThread(new TimerTask() {
+            @Override
+            public void run() {
+                if (mList == null) return;
+                for (QueryPcReturn.ListBean listBean : mList) {
+                    for (QueryPcReturn.ListBean bean : list) {
+                        if (listBean.getPch().equals(bean.getPch())) {
+                            if (bean.getWlh() != null) {
+                                listBean.setWlh(bean.getWlh());
+                            }
+                            if (bean.getQybh() != null) {
+                                listBean.setQybh(bean.getQybh());
+                            }
+                            if (bean.getGwbh() != null) {
+                                listBean.setGwbh(bean.getGwbh());
+                            }
+                        }
+                    }
+                }
+                mAdapter.notifyDataSetChanged();
+            }
+        });
+    }
+
+    @Override
+    public void RemovePC(List<PcInfo> pcs) {
+        final List<QueryPcReturn.ListBean> list = mAdapter.getList();
+        List<QueryPcReturn.ListBean> container = new ArrayList<>();
+        for (int i = 0; i < pcs.size(); i++) {
+            for (int j = 0; j < list.size(); j++) {
+                if (pcs.get(i).getPch().equals(list.get(j).getPch())) {
+                    container.add(list.get(j));
+                }
+            }
+        }
+        for (QueryPcReturn.ListBean bean : container) {
+            int position = list.indexOf(bean);
+            list.remove(position);
+            flags.remove(position);
+            newDatas.remove(position);
+        }
+        runOnUiThread(new TimerTask() {
+            @Override
+            public void run() {
+                if (list.size() == 0) {
+                    cbAll.setChecked(false);
+                }
+                tvSucceedNum.setText(mList.size() + "");
+                mAdapter.notifyDataSetChanged();
+            }
+        });
+    }
+
+    @OnClick({R.id.bt_picking_certificate_take, R.id.bt_picking_certificate_finish})
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.bt_picking_certificate_take:
+                if (mList.size() == 0) return;
+                if (getPcInfos().size() > 0) {
+                    mPresenter.fetchPC(getPcInfos(), "", "zjjh");
+                }
+                break;
+            case R.id.bt_picking_certificate_finish:
+                finishByBackBtn();
+                break;
+        }
+    }
+
+    private List<PcInfo> getPcInfos() {
+
+        List<PcInfo> pcInfos = new ArrayList<>();
+        for (int i = 0; i < flags.size(); i++) {
+            if (flags.get(i)) {
+                QueryPcReturn.ListBean listBean = mAdapter.getList().get(i);
+                PcInfo pcInfo = new PcInfo();
+                pcInfo.setPch(listBean.getPch());
+                if (listBean.getQybh() != null)
+                    pcInfo.setQybh(listBean.getQybh().toString());
+                pcInfos.add(pcInfo);
+            }
+        }
+        return pcInfos;
+    }
+
+    @Override
+    public void onScanStop() {
+        super.onScanStop();
+        if (newDatas.size() == 0) return;
+        StringBuffer sb = new StringBuffer();
+        for (String data : newDatas) {
+            sb.append(data + ",");
+        }
+        String pcs = sb.toString();
+        if (!pcs.equals(""))
+            mPresenter.QueryPc(pcs.substring(0, pcs.length() - 1));
+    }
+
+    public void finishByBackBtn() {
+        if (mList.size() != 0) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+            builder.setTitle("提示");
+            builder.setMessage("还有未取商品！");
+            builder.setPositiveButton("退出", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    getActivity().finish();
+                }
+            });
+            builder.setNegativeButton("取消", null);
+            builder.show();
+        } else {
+            getActivity().finish();
+        }
+    }
+
+    @Override
+    public void finishByBackIcon() {
+        if (mList.size() != 0) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+            builder.setTitle("提示");
+            builder.setMessage("还有未取商品！");
+            builder.setPositiveButton("退出", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    ((BaseActivity) getActivity()).changeFragment(0);
+                }
+            });
+            builder.setNegativeButton("取消", null);
+            builder.show();
+        } else {
+            ((BaseActivity) getActivity()).changeFragment(0);
+        }
+    }
+
+    @Override
+    public void ActivityFinish() {
+
+    }
+
+    @Override
+    public void changeBtnView() {
+
+    }
+
+}

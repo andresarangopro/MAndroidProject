@@ -1,0 +1,181 @@
+package com.lubin.chj.view.activity;
+
+import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.Toolbar;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.FrameLayout;
+import android.widget.RadioButton;
+import android.widget.TextView;
+
+import com.lubin.chj.R;
+import com.lubin.chj.bean.jsonToBean.CabinetReturn;
+import com.lubin.chj.recycler.AbsAdapterItem;
+import com.lubin.chj.recycler.BaseRecyclerAdapter;
+import com.lubin.chj.recycler.GridRecyclerView;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
+/**
+ * Created by hkr on 2017/1/19.
+ */
+public class CabinetActivityCs extends BaseActivity {
+
+    @BindView(R.id.box_booth_check)
+    RadioButton boxBoothCheck;
+    @BindView(R.id.box_num_check)
+    RadioButton boxNumCheck;
+    @BindView(R.id.tb_common)
+    Toolbar tbCommon;
+    @BindView(R.id.btn_query_num)
+    Button btnQueryNum;
+    @BindView(R.id.lv_query_cabinet)
+    View lvQueryCabinet;
+
+    private GridRecyclerView lvQueryCabinetListView;
+    public BaseRecyclerAdapter lvQueryCabinetListAdapter;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
+        setContentView(R.layout.activity_query_cabinet_cs);
+        ButterKnife.bind(this);
+        initHeader();
+        initView();
+        initData();
+    }
+
+    private void initView() {
+        lvQueryCabinetListView = new GridRecyclerView(getApplicationContext());
+        ((ViewGroup) lvQueryCabinet).addView(lvQueryCabinetListView, 0,
+                new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        lvQueryCabinetListView.setSpanCount(1);
+        lvQueryCabinetListView.setItemMargin(0);
+        lvQueryCabinetListAdapter = new BaseRecyclerAdapter();
+        lvQueryCabinetListView.setAdapter(lvQueryCabinetListAdapter);
+        lvQueryCabinetListView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return false;
+            }
+        });
+        lvQueryCabinetListAdapter.clear();
+    }
+
+    private void initData() {
+        List<CabinetReturn.ListBean> lists = new ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            CabinetReturn.ListBean listBean = new CabinetReturn.ListBean();
+            listBean.setBzcfsl(i);
+            listBean.setGtbh("000" + i);
+            listBean.setGwbh("000" + i);
+            listBean.setQybh("000" + i);
+            listBean.setQyh(i);
+            listBean.setSjcfsl(i);
+            lists.add(listBean);
+        }
+        for (Iterator<CabinetReturn.ListBean> iterator = lists.iterator(); iterator.hasNext(); ) {
+            CabinetReturn.ListBean listBean = iterator.next();
+            lvQueryCabinetListAdapter.addItem(new CabinetItem(listBean));
+        }
+    }
+
+    private void initHeader() {
+        tbCommon.setNavigationIcon(R.mipmap.back);
+        tbCommon.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                leave();
+            }
+        });
+    }
+
+    boolean flag = false;
+
+    @OnClick({R.id.box_booth_check, R.id.box_num_check, R.id.btn_query_num})
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.box_booth_check:
+                boxNumCheck.setChecked(false);
+                boxBoothCheck.setChecked(true);
+                break;
+            case R.id.box_num_check:
+                boxNumCheck.setChecked(true);
+                boxBoothCheck.setChecked(false);
+                break;
+            case R.id.btn_query_num:
+                flag = !flag;
+                if (flag) btnQueryNum.setText("灭灯");
+                else btnQueryNum.setText("亮灯");
+                break;
+        }
+    }
+    private void leave() {
+        String s1 = btnQueryNum.getText().toString();
+        if (s1.equals("灭灯")) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage("提示");
+            builder.setMessage("灯还亮着，请先灭灯才能退出！");
+            builder.setPositiveButton("确定", null);
+            builder.show();
+        } else {
+            finish();
+        }
+    }
+
+    private class CabinetItem extends AbsAdapterItem {
+        public CabinetReturn.ListBean listBean;
+        public View item_lv_cabinet;
+        public RadioButton radio_button;
+        public TextView qybh;
+        public TextView sjsl;
+        public TextView kysl;
+
+        public CabinetItem(CabinetReturn.ListBean listBean) {
+            this.listBean = listBean;
+        }
+
+        @Override
+        public View onCreateView(ViewGroup parent, int position) {
+            View view = View.inflate(getApplicationContext(), R.layout.item_lv_cabinet, null);
+            return view;
+        }
+
+        @Override
+        public void onBindView(BaseRecyclerAdapter.BaseViewHolder holder, View view, final int position) {
+            item_lv_cabinet = view.findViewById(R.id.item_lv_cabinet);
+            radio_button = (RadioButton) view.findViewById(R.id.radio_button);
+            qybh = (TextView) view.findViewById(R.id.tv_qybh);
+            sjsl = (TextView) view.findViewById(R.id.tv_sjsl);
+            kysl = (TextView) view.findViewById(R.id.tv_kysl);
+
+            qybh.setText(listBean.getQybh() + "");
+            sjsl.setText(listBean.getSjcfsl() + "");
+            kysl.setText((listBean.getBzcfsl() - listBean.getSjcfsl()) + "");
+            item_lv_cabinet.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    for (int i = 0; i < lvQueryCabinetListAdapter.getItemCount(); i++)
+                        ((CabinetItem) lvQueryCabinetListAdapter.getItem(i)).radio_button.setChecked(false);
+                    radio_button.setChecked(true);
+                }
+            });
+        }
+
+        @Override
+        public void onViewAttachedToWindow(BaseRecyclerAdapter.BaseViewHolder holder, View view) {
+
+        }
+    }
+}

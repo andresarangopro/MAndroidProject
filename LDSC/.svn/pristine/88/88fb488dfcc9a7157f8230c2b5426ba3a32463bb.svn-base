@@ -1,0 +1,82 @@
+package com.lide.app.ui.takeStock.urentry;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+
+import com.lide.app.R;
+import com.lide.app.adapter.TaskAdapter;
+import com.lide.app.ui.FragmentBase;
+import com.lide.app.ui.takeStock.UR.StockTaskDetailsActivity;
+import com.lubin.bean.TakeStockTask;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
+/**
+ * @author DaiJiCheng
+ * @time 2017/2/23  14:52
+ * @desc ${本地任务列表}
+ */
+public class ControlCheckTaskListFragment extends FragmentBase {
+
+    @BindView(R.id.rv_ur_check_task)
+    RecyclerView mRvUrCheckTask;
+    private List<TakeStockTask> mDatas = new ArrayList<>();  //任务列表
+    private TaskAdapter mAdapter;   //任务适配器
+
+    ControlCheckTaskActivity mControlCheckTaskActivity;
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_ur_task_list, container, false);
+        ButterKnife.bind(this, view);
+        initView();
+        mControlCheckTaskActivity = (ControlCheckTaskActivity) getActivity();
+        return view;
+    }
+
+    private void initView() {
+        mRvUrCheckTask.setLayoutManager(new LinearLayoutManager(mContext));
+        mAdapter = new TaskAdapter(mContext, mDatas, new TaskAdapter.IonSlidingViewClickListener() {
+
+            //点击进入任务详情
+            @Override
+            public void onItemClick(View view, int position) {
+                Intent intent = new Intent(getActivity(), StockTaskDetailsActivity.class);
+                startActivity(intent);
+            }
+
+            //点击删除
+            @Override
+            public void onDeleteBtnClick(View view, int position) {
+                mAdapter.getCheckTask(position).getName();
+                mAdapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onModifyBtnClick(View view, int position) {
+
+            }
+        });
+        mRvUrCheckTask.setAdapter(mAdapter);
+        mRvUrCheckTask.setItemAnimator(new DefaultItemAnimator());
+    }
+
+    @OnClick(R.id.btn_task_down_load)
+    public void onClick() {
+        mControlCheckTaskActivity.setCurrentFragment(1);
+    }
+
+}

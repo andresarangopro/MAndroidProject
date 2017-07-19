@@ -1,0 +1,214 @@
+package com.lide.app.ui.takeStock.urentry;
+
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.text.InputType;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.EditText;
+
+import com.lide.app.R;
+import com.lide.app.adapter.TaskAdapter;
+import com.lide.app.persistence.util.DBOperator;
+import com.lide.app.presenter.PInterface.ICheckTaskPresenter;
+import com.lide.app.presenter.takeStock.CheckTaskPresenterImpl;
+import com.lide.app.presenter.takeStock.ConfigTakeStockTackPresenterImpl;
+import com.lide.app.ui.FragmentBase;
+import com.lide.app.ui.VInterface.ICheckTaskView;
+import com.lide.app.ui.VInterface.IDataFragmentView;
+import com.lide.app.ui.takeStock.TakeStockTransaction;
+import com.lide.app.ui.takeStock.UR.StockTaskDetailsActivity;
+import com.lubin.bean.TakeStockOrder;
+import com.lubin.bean.TakeStockTask;
+import com.lubin.dao.TakeStockOrderDao;
+import com.lubin.dao.TakeStockTaskDao;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
+/**
+ * @author DaiJiCheng
+ * @time 2017/2/23  14:52
+ * @desc ${本地任务列表}
+ */
+public class ControlCheckTaskListFragment extends FragmentBase implements ICheckTaskView, IDataFragmentView<String> {
+
+    @BindView(R.id.rv_ur_check_task)
+    RecyclerView mRvUrCheckTask;
+    private List<TakeStockTask> mDatas = new ArrayList<>();  //任务列表
+    private TaskAdapter mAdapter;   //任务适配器
+
+    private ICheckTaskPresenter mPresenter;
+    private ConfigTakeStockTackPresenterImpl cPresenter;
+    private int mode = 0;
+
+    private DBOperator<TakeStockTaskDao, TakeStockTask> taskDBOperator;
+    private DBOperator<TakeStockOrderDao, TakeStockOrder> orderDBOperator;
+
+    ControlCheckTaskActivity mControlCheckTaskActivity;
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_ur_task_list, container, false);
+        ButterKnife.bind(this, view);
+        mControlCheckTaskActivity = (ControlCheckTaskActivity) getActivity();
+        taskDBOperator = TakeStockTransaction.getTaskDBOperator();
+        orderDBOperator = TakeStockTransaction.getOrderDBOperator();
+        return view;
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        init();
+        setAdapter();
+        super.onActivityCreated(savedInstanceState);
+    }
+
+    @Override
+    public void onResume() {
+        mPresenter.getAllCheckTask();
+        mode = 0;
+        super.onResume();
+    }
+
+    private void init() {
+        mDatas = new ArrayList<>();
+        mPresenter = new CheckTaskPresenterImpl(this);
+        cPresenter = new ConfigTakeStockTackPresenterImpl(this);
+    }
+
+    private void setAdapter() {
+        mRvUrCheckTask.setLayoutManager(new LinearLayoutManager(mContext));
+        mAdapter = new TaskAdapter(mContext, mDatas, new TaskAdapter.IonSlidingViewClickListener() {
+
+            //点击进入任务详情
+            @Override
+            public void onItemClick(View view, int position) {
+                saveRealPoint(position);
+            }
+
+            //点击删除
+            @Override
+            public void onDeleteBtnClick(View view, int position) {
+                mPresenter.deleteCheckTaskByCodeId(mAdapter.getCheckTask(position).getCodeId());
+                mAdapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onModifyBtnClick(View view, int position) {
+                modifyRealPoint(position);
+            }
+        });
+        mRvUrCheckTask.setAdapter(mAdapter);
+        mRvUrCheckTask.setItemAnimator(new DefaultItemAnimator());
+    }
+
+    @OnClick(R.id.btn_task_down_load)
+    public void onClick() {
+        mControlCheckTaskActivity.setCurrentFragment(1);
+    }
+
+    @Override
+    public void showCheckTaskList(List<TakeStockTask> tasks) {
+        mAdapter.refreshAllData(tasks);
+    }
+
+    @Override
+    public void showResult(int result) {
+        ShowToast(mContext.getText(result).toString());
+    }
+
+    @Override
+    public void jumpToTakeStock() {
+
+    }
+
+    TakeStockOrder mTakeStockOrder = null;
+
+    private void saveRealPoint(final int position) {
+        final TakeStockTask checkTask = mAdapter.getCheckTask(position);
+        List<TakeStockOrder> takeStockOrders = orderDBOperator.getItemsById(TakeStockOrderDao.Properties.Id, checkTask.getOrderId());
+        if (takeStockOrders != null && takeStockOrders.size() > 0) {
+            mTakeStockOrder = takeStockOrders.get(0);
+        }
+        int realPoint = checkTask.getRealPoint();
+        if (realPoint > 0) {
+            getActivity(checkTask);
+        } else {
+            android.support.v7.app.AlertDialog.Builder builder = new android.support.v7.app.AlertDialog.Builder(getActivity());
+            builder.setTitle("提示");
+            final EditText editText = new EditText(getActivity());
+            editText.setHint("请输入清点数");
+            editText.setInputType(InputType.TYPE_CLASS_NUMBER);
+            builder.setView(editText);
+            builder.setNegativeButton("确定", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    List<TakeStockTask> list = new ArrayList<>();
+                    String string = editText.getText().toString();
+                    if (string != null && !string.isEmpty()) {
+                        checkTask.setRealPoint(Integer.parseInt(string));
+                        list.add(checkTask);
+                        taskDBOperator.updateData(list);
+                        cPresenter.updateTakeStockTask(mTakeStockOrder.getTakeStockId(), checkTask.getCodeId(), Integer.parseInt(string));
+                        getActivity(checkTask);
+                    } else showDialog("清点数不能为空");
+                }
+            });
+            builder.setPositiveButton("取消", null);
+            builder.show();
+        }
+    }
+
+    private void getActivity(TakeStockTask checkTask) {
+        Intent intent = new Intent(getActivity(), StockTaskDetailsActivity.class);
+        intent.putExtra("checkTask", checkTask.getCodeId());
+        startActivity(intent);
+    }
+
+    private void modifyRealPoint(int position) {
+        final TakeStockTask checkTask = mAdapter.getCheckTask(position);
+        List<TakeStockOrder> takeStockOrders = orderDBOperator.getItemsById(TakeStockOrderDao.Properties.Id, checkTask.getOrderId());
+        if (takeStockOrders != null && takeStockOrders.size() > 0) {
+            mTakeStockOrder = takeStockOrders.get(0);
+        }
+        android.support.v7.app.AlertDialog.Builder builder = new android.support.v7.app.AlertDialog.Builder(getActivity());
+        builder.setTitle("提示");
+        final EditText editText = new EditText(getActivity());
+        editText.setHint("请输入清点数");
+        editText.setInputType(InputType.TYPE_CLASS_NUMBER);
+        builder.setView(editText);
+        builder.setNegativeButton("确定", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                List<TakeStockTask> list = new ArrayList<>();
+                String string = editText.getText().toString();
+                if (string != null && !string.isEmpty()) {
+                    checkTask.setRealPoint(Integer.parseInt(string));
+                    list.add(checkTask);
+                    taskDBOperator.updateData(list);
+                    cPresenter.updateTakeStockTask(mTakeStockOrder.getTakeStockId(), checkTask.getCodeId(), Integer.parseInt(string));
+//                    getActivity(checkTask);
+                } else showDialog("清点数不能为空");
+            }
+        });
+        builder.setPositiveButton("取消", null);
+        builder.show();
+    }
+
+    @Override
+    public void ShowData(String s) {
+
+    }
+}

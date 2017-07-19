@@ -1,0 +1,446 @@
+package com.lubin.chj.view.activity;
+
+import android.content.Context;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.Toolbar;
+import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.TextView;
+
+import com.lubin.chj.Listener.OnBroadCaseFinishListener;
+import com.lubin.chj.MApplication;
+import com.lubin.chj.R;
+import com.lubin.chj.adapter.BaseListAdapter;
+import com.lubin.chj.bean.Light;
+import com.lubin.chj.bean.jsonToBean.QueryPcReturn;
+import com.lubin.chj.presenter.IPresenter.ISearchPresenter;
+import com.lubin.chj.presenter.SearchPresenterImpl;
+import com.lubin.chj.service.BarcodeReceiver;
+import com.lubin.chj.service.ScanServiceWithUHF;
+import com.lubin.chj.utils.KeyboardUtils;
+import com.lubin.chj.utils.SharePreferenceUtil;
+import com.lubin.chj.view.activity.VInterface.ISearchView;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
+/**
+ * Created by lubin on 2016/11/8.
+ */
+
+public class SearchActivity extends BaseActivity implements ISearchView<List<QueryPcReturn.ListBean>> {
+
+
+    @BindView(R.id.tb_common)
+    Toolbar tbCommon;
+    @BindView(R.id.tv_succeedNum)
+    TextView tvSucceedNum;
+    @BindView(R.id.cb_all)
+    CheckBox cbAll;
+    @BindView(R.id.lv_search)
+    ListView lvSearch;
+    @BindView(R.id.btn_light)
+    Button btnLight;
+    @BindView(R.id.btn_remove)
+    Button btnRemove;
+    @BindView(R.id.et_query_barcode)
+    EditText etQueryBarcode;
+
+    private List<QueryPcReturn.ListBean> listEPC = new ArrayList<>();
+    private List<Boolean> flags = new ArrayList<>();
+    private SearchPCAdapter mAdapter;
+    private List<String> newDatas = new ArrayList<>();
+    private ISearchPresenter mPresenter = new SearchPresenterImpl(this);
+    public ScanServiceWithUHF mService = ScanServiceWithUHF.getInstance();
+    private String mFlag = "条码";
+    private Timer mTimer;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
+        setContentView(R.layout.activity_search);
+        ButterKnife.bind(this);
+        initHeader();
+        initList();
+        initService();
+        initTimer();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        tbCommon.setTitle("搜索");
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_common, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getTitle().equals("条码")) {
+            mFlag = "" + "电子标签";
+        } else {
+            mFlag = "条码";
+        }
+        item.setTitle(mFlag);
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void initHeader() {
+        setSupportActionBar(tbCommon);
+        tbCommon.setNavigationIcon(R.mipmap.back);
+        tbCommon.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                leave();
+            }
+        });
+    }
+
+    private void initList() {
+        cbAll.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                boolean checked = cbAll.isChecked();
+                for (int i = 0; i < flags.size(); i++) {
+                    flags.set(i, checked);
+                    mAdapter.notifyDataSetChanged();
+                }
+            }
+        });
+        mAdapter = new SearchPCAdapter(this, listEPC, flags);
+        lvSearch.setAdapter(mAdapter);
+        lvSearch.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                if (flags.get(position)) {
+                    flags.set(position, false);
+                } else {
+                    flags.set(position, true);
+                }
+                mAdapter.notifyDataSetChanged();
+                int i;
+                for (i = 0; i < flags.size(); i++) {
+                    if (!flags.get(i)) {
+                        break;
+                    }
+                }
+                if (i == flags.size())
+                    cbAll.setChecked(true);
+                else
+                    cbAll.setChecked(false);
+            }
+        });
+    }
+
+    private SharePreferenceUtil mSpUtil = MApplication.getInstance().getSpUtil();
+    String barCode = "0000000000";
+
+    private void initService() {
+        if (mSpUtil.getBarCode() != null && !mSpUtil.getBarCode().isEmpty())
+            barCode = mSpUtil.getBarCode();
+        mService.SetHandleFunc(msgHandler);
+        BarcodeReceiver.setListener(new OnBroadCaseFinishListener() {
+            @Override
+            public void onBroadCaseFinish(final String data) {
+                if (!data.equals(barCode)) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            addToList(data);
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    private void initTimer() {
+        mTimer = new Timer();
+        mTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                onScanStop();
+            }
+        }, 0, 2500);
+    }
+
+
+    @Override
+    public void changeBtnView() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                String s1 = btnLight.getText().toString();
+                if (s1.equals("亮灯")) {
+                    btnLight.setText("灭灯");
+                    cbAll.setEnabled(false);
+                    lvSearch.setEnabled(false);
+                    btnRemove.setEnabled(false);
+                } else {
+                    btnLight.setText("亮灯");
+                    cbAll.setEnabled(true);
+                    lvSearch.setEnabled(true);
+                    btnRemove.setEnabled(true);
+                }
+            }
+        });
+    }
+
+    @Override
+    public void ShowData(final List<QueryPcReturn.ListBean> beanList) {
+        if (beanList.size() > 0) {
+            for (QueryPcReturn.ListBean bean : beanList) {
+                for (QueryPcReturn.ListBean listBean : listEPC) {
+                    if (listBean.getPch().equals(bean.getPch())) {
+                        listBean.setQybh(bean.getQybh());
+                        listBean.setGwbh(bean.getGwbh());
+                        listBean.setWlh(bean.getWlh());
+                    }
+                }
+            }
+        }
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mAdapter.notifyDataSetChanged();
+                newDatas.clear();
+            }
+        });
+    }
+
+    private Handler msgHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            String str = msg.getData().getString("msg");
+            if (null == str || 0 == str.length())
+                return;
+            if (msg.what == ScanServiceWithUHF.MSG_EPC) { // 标签内容
+                String epc = str;
+                addToList(epc);
+            }
+        }
+    };
+
+    private void addToList(final String epcCount) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                String[] szInfo = epcCount.split(";");
+                String epc = szInfo[0];
+                int index = 0;
+                for (index = 0; index < listEPC.size(); index++) {
+                    QueryPcReturn.ListBean info = listEPC.get(index);
+                    // list中有此EPC
+                    if (epc.equals(info.getPch())) {
+                        break;
+                    }
+                }
+
+                if (index == listEPC.size()) {
+                    QueryPcReturn.ListBean info = new QueryPcReturn.ListBean();
+                    info.setPch(epc);
+                    listEPC.add(info);
+                    flags.add(false);
+                    newDatas.add(epc);
+                    cbAll.setChecked(false);
+                }
+                mAdapter.notifyDataSetChanged();
+                tvSucceedNum.setText(String.valueOf(mAdapter.getCount()));
+                lvSearch.setSelection(lvSearch.getCount() - 1);
+            }
+        });
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (event.getRepeatCount() == 0) {
+            if (275 == keyCode) {
+                if (mFlag.equals("" + "电子标签"))
+                    mService.inventory();
+                else
+                    mService.scanBarcode();
+            }
+        }
+        return true;
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if (event.getRepeatCount() == 0) {
+            if (275 == keyCode) {
+                if (mFlag.equals("" + "电子标签"))
+                    mService.pause();
+                else
+                    mService.stopScan();
+            } else if (keyCode == KeyEvent.KEYCODE_BACK) {
+                leave();
+            }
+        }
+        return true;
+    }
+
+    public void onScanStop() {
+        if (newDatas.size() == 0) return;
+        StringBuffer sb = new StringBuffer();
+        for (String data : newDatas) {
+            sb.append(data + ",");
+        }
+        String pcs = sb.toString();
+        if (!pcs.equals(""))
+            mPresenter.QueryPc(pcs.substring(0, pcs.length() - 1));
+    }
+
+    @Override
+    public void onBackPressed() {
+        leave();
+    }
+
+    private void leave() {
+        String s1 = btnLight.getText().toString();
+        if (s1.equals("灭灯")) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setMessage("提示");
+            builder.setMessage("灯还亮着，请先灭灯才能退出！");
+            builder.setPositiveButton("确定", null);
+            builder.show();
+        } else {
+            mService.pause();
+            mService.stopScan();
+            finish();
+        }
+    }
+
+    private List<Light> getLightList(List<String> gwbhs, boolean b) {
+        List<Light> list = new ArrayList<>();
+        for (String gwbh : gwbhs) {
+            Light light = new Light();
+            light.gwbh = gwbh;
+            light.isOpen = b;
+            list.add(light);
+        }
+        return list;
+    }
+
+    @OnClick({R.id.btn_light, R.id.btn_remove, R.id.btn_query})
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.btn_light:
+                List<String> gwbhs = new ArrayList<>();
+                for (int i = 0; i < flags.size(); i++) {
+                    if (flags.get(i)) {
+                        gwbhs.add(String.valueOf(listEPC.get(i).getGwbh()));
+                    }
+                }
+                if (gwbhs.size() == 0) return;
+                if (btnLight.getText().toString().equals("亮灯")) {
+                    List<Light> lightList = getLightList(gwbhs, true);
+                    mPresenter.SetLight(lightList);
+                } else {
+                    List<Light> lightList = getLightList(gwbhs, false);
+                    mPresenter.SetLight(lightList);
+                }
+                break;
+            case R.id.btn_remove:
+                List<QueryPcReturn.ListBean> container = new ArrayList<>();
+                for (int i = 0; i < flags.size(); i++) {
+                    if (flags.get(i)) {
+                        container.add(listEPC.get(i));
+                    }
+                }
+                for (QueryPcReturn.ListBean bean : container) {
+                    int index = listEPC.indexOf(bean);
+                    flags.remove(index);
+                    listEPC.remove(index);
+                }
+                container.clear();
+                if (listEPC.size() == 0) {
+                    cbAll.setChecked(false);
+                    btnLight.setText("亮灯");
+                }
+                mAdapter.notifyDataSetChanged();
+                tvSucceedNum.setText(String.valueOf(listEPC.size()));
+                break;
+            case R.id.btn_query:
+                String s = etQueryBarcode.getText().toString();
+                if (!s.equals("") && !s.equals(" ") && !s.isEmpty()) {
+                    addToList(s);
+                    etQueryBarcode.setText("");
+                    KeyboardUtils.hideSoftInput(this);
+                }
+                break;
+        }
+    }
+
+    class SearchPCAdapter extends BaseListAdapter<QueryPcReturn.ListBean> {
+        List<Boolean> flags;
+
+        public SearchPCAdapter(Context context, List<QueryPcReturn.ListBean> list, List<Boolean> flags) {
+            super(context, list);
+            this.flags = flags;
+        }
+
+        @Override
+        public View bindView(final int position, View convertView, ViewGroup parent) {
+            if (convertView == null) {
+                convertView = mInflater.inflate(R.layout.item_lv_pick, parent, false);
+
+            }
+            final QueryPcReturn.ListBean listBean = getList().get(position);
+            CheckBox cbQick = (CheckBox) convertView.findViewById(R.id.cb_isPick);
+            TextView index = (TextView) convertView.findViewById(R.id.tv_index);
+            TextView wlh = (TextView) convertView.findViewById(R.id.tv_wlh);
+            TextView pch = (TextView) convertView.findViewById(R.id.tv_pch);
+            TextView gwh = (TextView) convertView.findViewById(R.id.tv_gwh);
+            TextView qybh = (TextView) convertView.findViewById(R.id.tv_qybh);
+            if (flags.size() == position) {
+                flags.add(true);
+            }
+            cbQick.setChecked(flags.get(position));
+            index.setText(String.valueOf(position + 1));
+            if (listBean.getWlh() == null) {
+                wlh.setText("");
+            } else {
+                wlh.setText(listBean.getWlh().toString());
+            }
+            if (listBean.getGwbh() == null) {
+                gwh.setText("");
+            } else {
+                gwh.setText(listBean.getGwbh().toString());
+            }
+            if (listBean.getQybh() == null) {
+                qybh.setText("");
+            } else {
+                String qy = listBean.getQybh().toString();
+                qybh.setText(qy.substring(qy.length() - 2, qy.length()));
+            }
+
+            pch.setText(listBean.getPch());
+
+            return convertView;
+        }
+
+    }
+}

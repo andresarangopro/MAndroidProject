@@ -1,0 +1,122 @@
+package com.lide.app.presenter.takeStock;
+
+import com.lide.app.MApplication;
+import com.lide.app.bean.JsonToBean.TakeStockOrder;
+import com.lide.app.bean.JsonToBean.UR.TaskList;
+import com.lide.app.listener.OnLoadFinishListener;
+import com.lide.app.model.DownLoadTackStockOrderListModel;
+import com.lide.app.service.DbService;
+import com.lide.app.ui.VInterface.IDataFragmentView;
+import com.lubin.bean.CheckTask;
+import com.lubin.bean.Order;
+import com.lubin.dao.CheckTaskDao;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by HKR on 2017/3/1.
+ */
+
+public class DownLoadTackStockOrderListPresenterImpl {
+
+    private DbService db;
+
+    IDataFragmentView view;
+    DownLoadTackStockOrderListModel mDownLoadTackStockOrderListModel;
+
+    public DownLoadTackStockOrderListPresenterImpl(IDataFragmentView view) {
+        this.view = view;
+        mDownLoadTackStockOrderListModel = new DownLoadTackStockOrderListModel();
+        db = DbService.getInstance(MApplication.getInstance());
+    }
+
+    /**
+     * 请求盘点单
+     *
+     * @param search
+     * @param isPageable     是否分页
+     * @param currentPage    当前页
+     * @param recordsPerPage 每页显示数目
+     */
+    public void downLoadTackStockOrderList(String search, boolean isPageable, final int currentPage, int recordsPerPage) {
+        try {
+            mDownLoadTackStockOrderListModel.downloadOrderDetail(search, isPageable, currentPage, recordsPerPage, new OnLoadFinishListener() {
+                @Override
+                public void OnLoadFinish(Map<String, String> map) {
+                    if (map.get("statusCode").equals("200")) {
+                        String result = map.get("result");
+                        if (result != null && !result.isEmpty()) {
+                            view.ShowData(getOrders(result, currentPage));
+                        }
+                    }
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public List<Order> getOrders(String result, int currentPage) {
+        List<Order> orders = new ArrayList<Order>();
+        TakeStockOrder data = TakeStockOrder.objectFromData(result);
+        if (data == null || data.getData() == null) {
+            return orders;
+        }
+        if (data.getCurrentPage() < currentPage) {
+            return orders;
+        }
+        for (TakeStockOrder.DataBean order : data.getData()) {
+            Order mOrder = new Order();
+            mOrder.setCode(order.getCode());
+            mOrder.setTakeStockId(order.getId());
+            mOrder.setWarehouseName(order.getWarehouseName());
+            orders.add(mOrder);
+        }
+        return orders;
+    }
+
+    public void downLoadTaskList(String orderId, boolean isPageable, final int currentPage, int recordsPerPage) {
+        try {
+            mDownLoadTackStockOrderListModel.downLoadTaskList(orderId, isPageable, currentPage, recordsPerPage, new OnLoadFinishListener() {
+                @Override
+                public void OnLoadFinish(Map<String, String> map) {
+                    if (map.get("statusCode").equals("200")) {
+                        String result = map.get("result");
+                        if (result != null && !result.isEmpty()) {
+                            view.ShowData(getTasks(result, currentPage));
+                        }
+                    }
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public List<TaskList.DataBean> getTasks(String result, int currentPage) {
+        List<TaskList.DataBean> tasks = new ArrayList<>();
+        TaskList data = TaskList.objectFromData(result);
+        if (data == null || data.getData() == null) {
+            return tasks;
+        }
+        if (data.getCurrentPage() < currentPage) {
+            return tasks;
+        }
+        return data.getData();
+    }
+
+    public void loadTaskDetail(TaskList.DataBean dataBean) {
+        String Id = null;
+        if (dataBean.getId() != null) {
+            List<CheckTask> list = db.getItemByParameter(CheckTaskDao.Properties.Name, dataBean.getId());
+            if(list.size() > 0){
+                view.ShowToast("该任务已下载过！");
+            }else {
+                view.startProgressDialog("下载中...");
+
+            }
+        }
+    }
+}

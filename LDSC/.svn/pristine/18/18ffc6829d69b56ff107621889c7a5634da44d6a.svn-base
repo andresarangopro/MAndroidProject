@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">AndroidExtendLib</string>
+    <string name="default_loading_text">加载中...</string>
+    <string name="default_handling_text">处理中...</string>
+    <string name="default_downloading_text">下载中...</string>
+</resources>

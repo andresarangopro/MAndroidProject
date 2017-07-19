@@ -1,0 +1,485 @@
+package com.lide.app.ui.inbound.LS;
+
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import com.google.gson.internal.LinkedTreeMap;
+import com.lide.app.R;
+import com.lide.app.config.Configs;
+import com.lide.app.persistence.util.DBOperator;
+import com.lide.app.persistence.util.SPUtils;
+import com.lide.app.persistence.util.Utils;
+import com.lide.app.persistence.widget.ResourceUtil;
+import com.lide.app.persistence.widget.recycler.AbsAdapterItem;
+import com.lide.app.persistence.widget.recycler.BaseRecyclerAdapter;
+import com.lide.app.persistence.widget.recycler.GridRecyclerView;
+import com.lide.app.presenter.inbound.InBoundPresenter;
+import com.lide.app.ui.FragmentBase;
+import com.lide.app.ui.LoginActivity;
+import com.lide.app.ui.VInterface.IDataFragmentView;
+import com.lide.app.ui.inbound.InboundTransaction;
+import com.lubin.bean.InBoundCase;
+import com.lubin.bean.InBoundDetail;
+import com.lubin.bean.InBoundOperate;
+import com.lubin.bean.InBoundOrder;
+import com.lubin.dao.InBoundCaseDao;
+import com.lubin.dao.InBoundOperateDao;
+import com.lubin.dao.InBoundOrderDao;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
+public class InboundDetailFragment extends FragmentBase implements IDataFragmentView<List<LinkedTreeMap>> {
+
+    @BindView(R.id.order_id)
+    TextView orderId;
+    @BindView(R.id.order_address_all)
+    TextView orderAddressAll;
+
+    @BindView(R.id.order_all_num)
+    TextView orderAllNum;
+    @BindView(R.id.order_state)
+    TextView orderState;
+
+    @BindView(R.id.particulars_layout)
+    FrameLayout particularsLayout;
+    @BindView(R.id.particulars_button)
+    LinearLayout particularsButton;
+
+    private GridRecyclerView particularsListView;
+    BaseRecyclerAdapter particularsListAdapter;
+
+    private View mView;
+    private InboundActivity mActivity;
+    private InBoundPresenter inBoundPresenter;
+    private DBOperator<InBoundOrderDao, InBoundOrder> orderDBOperator;
+    private DBOperator<InBoundOperateDao, InBoundOperate> operateDBOperator;
+    private DBOperator<InBoundCaseDao, InBoundCase> caseDBOperator;
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        mView = inflater.inflate(R.layout.fragment_detail_in_bound_order, container, false);
+        ButterKnife.bind(this, mView);
+        initViews();
+
+        mActivity = (InboundActivity) getActivity();
+        inBoundPresenter = new InBoundPresenter(this);
+        caseDBOperator = InboundTransaction.getCaseDBOperator();
+        orderDBOperator = InboundTransaction.getOrderDBOperator();
+        operateDBOperator = InboundTransaction.getOperateDBOperator();
+
+        return mView;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        refreshData();
+    }
+
+    @Override
+    public void setUserVisibleHint(boolean isVisibleToUser) {
+        super.setUserVisibleHint(isVisibleToUser);
+        if (isVisibleToUser) {
+            if (mActivity == null) return;
+            refreshData();
+        }
+    }
+
+    private void initViews() {
+        particularsListView = new GridRecyclerView(getActivity());
+        ((ViewGroup) particularsLayout).addView(particularsListView, 0, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT));
+        particularsListView.setSpanCount(1);
+        particularsListView.setItemMargin(0);
+        particularsListAdapter = new BaseRecyclerAdapter();
+        particularsListView.setAdapter(particularsListAdapter);
+        particularsListView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return false;
+            }
+        });
+        particularsListAdapter.clear();
+    }
+
+    @Override
+    public void ShowData(List<LinkedTreeMap> linkedTreeMaps) {
+
+    }
+
+    @Override
+    public void showDialog(String result) {
+        super.showDialog(result);
+        if (result.equals("上传成功~")) {
+            List<InBoundOperate> operates = null;
+            if (mActivity.orderId != 0) {
+                operates = orderDBOperator.getItemByID(mActivity.orderId).getOperates();
+            } else {
+                operates = caseDBOperator.getItemByID(mActivity.caseId).getOperates();
+            }
+            for (InBoundOperate operate : operates) {
+                operate.setIsUpload(true);
+            }
+            operateDBOperator.updateData(operates);
+        }
+    }
+
+    public void upload() {
+        InBoundOrder inBoundOrder = null;
+        List<InBoundOperate> container = null;
+        if (mActivity.orderId != 0) {
+            inBoundOrder = orderDBOperator.getItemByID(mActivity.orderId);
+            container = operateDBOperator.getItemsByParameters(null
+                    , InBoundOperateDao.Properties.InBoundOrderId.eq(mActivity.orderId)
+                    , InBoundOperateDao.Properties.IsUpload.eq(false));
+        } else {
+            inBoundOrder = caseDBOperator.getItemByID(mActivity.caseId).getInBoundOrder();
+            container = operateDBOperator.getItemsByParameters(null
+                    , InBoundOperateDao.Properties.InBoundCaseId.eq(mActivity.caseId)
+                    , InBoundOperateDao.Properties.IsUpload.eq(false));
+        }
+        if (Utils.getApiKey() == null) {
+            Intent login = new Intent(getActivity(), LoginActivity.class);
+            login.putExtra("isAtNet", true);
+            startActivityForResult(login, Configs.LOGIN);
+        } else {
+            if (!SPUtils.get(getActivity(), "deviceId", "").equals("")) {
+                if (container.size() == 0) {
+                    ShowToast("没有可上传的数据~");
+                    return;
+                }
+                inBoundPresenter.UploadInboundOperate(inBoundOrder.getOrderId(), container);
+            } else {
+                ShowToast("请先设置设备");
+            }
+        }
+    }
+
+    private void reset() {
+        startProgressDialog("重置中...");
+        runOnWorkThread(new Runnable() {
+            @Override
+            public void run() {
+                List<InBoundOperate> container;
+                if (mActivity.orderId != 0) {
+                    if (mActivity.isMixedModel) {
+                        container = operateDBOperator.getItemsByParameters(null
+                                , InBoundOperateDao.Properties.InBoundOrderId.eq(mActivity.orderId)
+                                , InBoundOperateDao.Properties.IsUpload.eq(false)
+                                , InBoundOperateDao.Properties.Qty.eq(0)
+                                , InBoundOperateDao.Properties.OperateQty.eq(1));
+                        if (container.size() == 0) {
+                            stopProgressDialog("没有数据可重置~");
+                            return;
+                        }
+                        operateDBOperator.deleteDatas(container);
+                    } else {
+                        container = operateDBOperator.getItemsByParameters(null
+                                , InBoundOperateDao.Properties.InBoundOrderId.eq(mActivity.orderId)
+                                , InBoundOperateDao.Properties.IsUpload.eq(false)
+                                , InBoundOperateDao.Properties.Epc.isNotNull()
+                                , InBoundOperateDao.Properties.OperateQty.eq(1));
+                        if (container.size() == 0) {
+                            stopProgressDialog("没有数据可重置~");
+                            return;
+                        }
+                        for (InBoundOperate operate : container) {
+                            operate.setOperateQty(0);
+                        }
+                        operateDBOperator.updateData(container);
+                    }
+                } else {
+                    container = operateDBOperator.getItemsByParameters(null
+                            , InBoundOperateDao.Properties.InBoundCaseId.eq(mActivity.caseId)
+                            , InBoundOperateDao.Properties.IsUpload.eq(false)
+                            , InBoundOperateDao.Properties.Epc.isNotNull()
+                            , InBoundOperateDao.Properties.OperateQty.eq(1));
+                    if (container.size() == 0) {
+                        stopProgressDialog("没有数据可重置~");
+                        return;
+                    }
+                    for (InBoundOperate operate : container) {
+                        operate.setOperateQty(0);
+                    }
+                    operateDBOperator.updateData(container);
+                }
+
+                recount();
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        refreshData();
+                        stopProgressDialog("重置成功~");
+                    }
+                });
+            }
+        });
+    }
+
+    private void recount() {
+        InBoundOrder inBoundOrder;
+        if (mActivity.orderId != 0) {
+            inBoundOrder = orderDBOperator.getItemByID(mActivity.orderId);
+        } else {
+            inBoundOrder = caseDBOperator.getItemByID(mActivity.caseId).getInBoundOrder();
+        }
+        inBoundOrder.resetOperates();
+        inBoundOrder.resetDetails();
+        int orderSum = 0;
+        for (InBoundOperate inBoundOperate : inBoundOrder.getOperates()) {
+            orderSum += inBoundOperate.getOperateQty();
+        }
+        if (orderSum == 0) inBoundOrder.setStatus(0);
+        inBoundOrder.setOperateQty(orderSum);
+        inBoundOrder.update();
+        for (InBoundCase inBoundCase : inBoundOrder.getCases()) {
+            inBoundCase.resetOperates();
+            inBoundCase.resetDetails();
+            int caseSum = 0;
+            for (InBoundOperate inBoundOperate : inBoundCase.getOperates()) {
+                caseSum += inBoundOperate.getOperateQty();
+            }
+            if (caseSum == 0) inBoundCase.setStatus(0);
+            inBoundCase.setOperateQty(caseSum);
+            inBoundCase.update();
+            for (InBoundDetail inBoundDetail : inBoundCase.getDetails()) {
+                inBoundDetail.resetOperates();
+                int detailSum = 0;
+                for (InBoundOperate inBoundOperate : inBoundDetail.getOperates()) {
+                    detailSum += inBoundOperate.getOperateQty();
+                }
+                inBoundDetail.setOperateQty(detailSum);
+                inBoundDetail.update();
+            }
+        }
+    }
+
+    private void refreshData() {
+        List<InBoundDetail> details = new ArrayList<>();
+        if (mActivity.orderId != 0) {
+            InBoundOrder inBoundOrder = orderDBOperator.getItemByID(mActivity.orderId);
+            Iterator<InBoundDetail> iterator = inBoundOrder.getDetails().iterator();
+            if (orderAddressAll != null)
+                orderAddressAll.setText(inBoundOrder.getFormWarehouseName());
+            if (orderId != null)
+                orderId.setText(inBoundOrder.getCode());
+            if (orderState != null)
+                orderState.setText(status(inBoundOrder.getStatus()));
+            if (orderAllNum != null)
+                orderAllNum.setText(inBoundOrder.getQty() + "/" + inBoundOrder.getOperateQty());
+            while (iterator.hasNext()) {
+                InBoundDetail next = iterator.next();
+                boolean flag = false;
+                for (InBoundDetail inBoundDetail : details) {
+                    if (inBoundDetail.getBarcode().equals(next.getBarcode())) {
+                        inBoundDetail.setQty(inBoundDetail.getQty() + next.getQty());
+                        inBoundDetail.setOperateQty(inBoundDetail.getOperateQty() + next.getOperateQty());
+                        flag = true;
+                    }
+                }
+                if (!flag) {
+                    InBoundDetail inBoundDetail = new InBoundDetail();
+                    inBoundDetail.setQty(next.getQty());
+                    inBoundDetail.setOperateQty(next.getOperateQty());
+                    inBoundDetail.setBarcode(next.getBarcode());
+                    inBoundDetail.setSkuName(next.getSkuName());
+                    inBoundDetail.setDate(next.getDate());
+                    details.add(inBoundDetail);
+                }
+            }
+            showInBoundOrderData(details);
+        } else {
+            InBoundCase inBoundCase = caseDBOperator.getItemByID(mActivity.caseId);
+            InBoundOrder inBoundOrder = inBoundCase.getInBoundOrder();
+            details = inBoundCase.getDetails();
+            if (orderAddressAll != null)
+                orderAddressAll.setText(inBoundCase.getInBoundOrder().getFormWarehouseName());
+            if (orderId != null)
+                orderId.setText(inBoundCase.getCode());
+            if (orderState != null)
+                orderState.setText(status(inBoundOrder.getStatus()));
+            if (orderAllNum != null)
+                orderAllNum.setText(inBoundCase.getQty() + "/" + inBoundCase.getOperateQty());
+            showInBoundOrderData(details);
+        }
+    }
+
+    public void showInBoundOrderData(List<InBoundDetail> details) {
+        if (particularsListAdapter != null) {
+            particularsListAdapter.clear();
+            for (int i = 0; i < details.size(); i++) {
+                particularsListAdapter.addItem(new ParticularsListItem(details.get(i)));
+            }
+        }
+    }
+
+    public class ParticularsListItem extends AbsAdapterItem {
+        InBoundDetail mInBoundDetail;
+
+        public ParticularsListItem(InBoundDetail mInBoundDetail) {
+            this.mInBoundDetail = mInBoundDetail;
+        }
+
+        @Override
+        public View onCreateView(ViewGroup parent, int position) {
+            int layout = ResourceUtil.getLayoutId(getActivity(), "particulars_tablerow_layout");
+            final View view = View.inflate(getActivity(), layout, null);
+
+            return view;
+        }
+
+        @Override
+        public void onBindView(BaseRecyclerAdapter.BaseViewHolder holder, View view, int position) {
+            int id = ResourceUtil.getId(getActivity(), "table_row");
+            View tableRow = view.findViewById(id);
+            id = ResourceUtil.getId(getActivity(), "view_bg");
+            View viewBg = view.findViewById(id);
+
+            id = ResourceUtil.getId(getActivity(), "particulars_id");
+            TextView particularsID = (TextView) view.findViewById(id);
+            id = ResourceUtil.getId(getActivity(), "particulars_sku");
+            TextView particularsSKU = (TextView) view.findViewById(id);
+            id = ResourceUtil.getId(getActivity(), "particulars_name");
+            TextView particularsNAME = (TextView) view.findViewById(id);
+            id = ResourceUtil.getId(getActivity(), "particulars_order_num");
+            TextView particularsOrderNum = (TextView) view.findViewById(id);
+            id = ResourceUtil.getId(getActivity(), "particulars_operation_num");
+            TextView particularsOperationNum = (TextView) view.findViewById(id);
+
+            particularsID.setText(String.valueOf((position + 1)));
+            particularsSKU.setText(mInBoundDetail.getBarcode());
+            particularsNAME.setText(mInBoundDetail.getSkuName());
+            particularsOrderNum.setText(String.valueOf(mInBoundDetail.getQty()));
+            particularsOperationNum.setText(String.valueOf(mInBoundDetail.getOperateQty()));
+
+            if (mInBoundDetail.getQty() == mInBoundDetail.getOperateQty()) {
+                tableRow.setBackgroundColor(getResources().getColor(R.color.success_text));
+                viewBg.setBackgroundColor(getResources().getColor(R.color.white));
+                particularsOperationNum.setTextColor(getResources().getColor(R.color.goods_delivery_title_bg));
+            } else {
+                tableRow.setBackgroundColor(getResources().getColor(R.color.white));
+                viewBg.setBackgroundColor(getResources().getColor(R.color.shadow));
+                particularsOperationNum.setTextColor(getResources().getColor(R.color.goods_del_bg));
+            }
+
+        }
+
+        @Override
+        public void onViewAttachedToWindow(BaseRecyclerAdapter.BaseViewHolder holder, View view) {
+
+        }
+    }
+
+    public String status(int flag) {
+        String name = null;
+        switch (flag) {
+            case 0:
+                name = "未处理";
+                break;
+            case 1:
+                name = "处理中";
+                break;
+            case 2:
+                name = "已完成";
+                particularsButton.setVisibility(View.GONE);
+                break;
+        }
+        return name;
+    }
+
+    @OnClick({R.id.p_reset, R.id.p_start, R.id.sku_start})
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.p_reset:
+                builder.setMessage("是否重置？");
+                builder.setNegativeButton("取消", null);
+                builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        reset();
+                    }
+                });
+                builder.show();
+                break;
+            case R.id.p_start:
+                if (mActivity.isMixedModel) {
+                    ((ScanningRFIDForMixFragment) mActivity.fragments.get(1)).clear();
+                    mActivity.setCurrentFragment(1);
+                } else {
+                    if (getBoolean() != 2)
+                        mActivity.setCurrentFragment(2);
+                    else
+                        showDialog("该单不支持RFID收货！");
+                }
+                //((ScanningRFIDForMixFragment) mActivity.fragments.get(1)).initScanPresenter();
+                break;
+            case R.id.sku_start:
+                if (mActivity.isMixedModel) {
+                    mActivity.setCurrentFragment(3);
+                } else {
+                    if (getBoolean() != 0)
+                        mActivity.setCurrentFragment(4);
+                    else
+                        showDialog("该单不支持条码收货！");
+                }
+
+                break;
+        }
+    }
+
+    public int getBoolean() {
+        int flag = 1;
+        if (mActivity.orderId == 0) {
+            int sum = 0;
+            InBoundCase inBoundCase = caseDBOperator.getItemByID(mActivity.caseId);
+            for (InBoundOperate inBoundOperate : inBoundCase.getOperates()) {
+                if (inBoundOperate.getEpc() != null) {
+                    sum += inBoundOperate.getQty();
+                }
+            }
+            if (sum == 0) {
+                flag = 2;
+            } else {
+                if (sum == inBoundCase.getQty()) {
+                    flag = 0;
+                } else {
+                    flag = 1;
+                }
+            }
+        } else {
+            int sum = 0;
+            InBoundOrder inBoundOrder = orderDBOperator.getItemByID(mActivity.orderId);
+            for (InBoundOperate inBoundOperate : inBoundOrder.getOperates()) {
+                if (inBoundOperate.getEpc() != null) {
+                    sum += inBoundOperate.getQty();
+                }
+            }
+            if (sum == 0) {
+                flag = 2;
+            } else {
+                if (sum == inBoundOrder.getQty()) {
+                    flag = 0;
+                } else {
+                    flag = 1;
+                }
+            }
+        }
+        return flag;
+    }
+}

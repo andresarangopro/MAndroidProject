@@ -1,0 +1,137 @@
+package com.lide.app.model;
+
+import com.lide.app.MApplication;
+import com.lide.app.model.MInterface.ICheckTaskModel;
+import com.lide.app.persistence.util.StringUtils;
+import com.lide.app.persistence.util.Utils;
+import com.lide.app.service.DbService;
+import com.lubin.bean.TakeStockEpcCollect;
+import com.lubin.bean.TakeStockTask;
+import com.lubin.bean.User;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+public class CheckTaskModelImpl implements ICheckTaskModel {
+
+    public DbService db;
+
+    public CheckTaskModelImpl() {
+        db = DbService.getInstance(MApplication.getInstance());
+    }
+
+    @Override
+    public Boolean addCheckTask(String taskName, int mode) {
+        User currentUser = Utils.getCurrentUser();
+        if (queryCheckTask(taskName).size() == 0) {
+            StringBuilder upperCase = new StringBuilder();
+            for (int n = 0; n < taskName.length(); n++) {
+                String str = taskName.substring(n, n + 1);
+                upperCase.append(StringUtils.getFirstChar(str));
+            }
+            String s = upperCase.toString();
+
+            TakeStockTask task = new TakeStockTask();
+
+            task.setName(taskName);
+            task.setComplete(false);
+            task.setMode(mode);
+            task.setDate(new Date(System.currentTimeMillis()));
+            task.setUpperCase(s);
+            task.setLowerCase(s.toLowerCase());
+            if (currentUser != null) {
+                task.setUserId(currentUser.getId());
+                task.setUser(currentUser);
+                task.setWarehouseCode(currentUser.getWarehouseCode());
+            }
+            db.saveCheckTask(task);
+            Utils.setCurrentTask(task);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public Boolean deleteCheckTask(String taskName) {
+        List<TakeStockTask> tasks = queryCheckTask(taskName);
+        TakeStockTask takeStockTask = tasks.get(0);
+        if (tasks.size() == 1) {
+            db.deleteCheckTask(takeStockTask.getId());
+            db.deleteCollectLists(db.queryCollect(takeStockTask.getName()));
+            db.deleteSkuCollectList(db.querySkuCollectByTaskCode(taskName));
+            return true;
+        }
+        return false;
+    }
+
+    public Boolean deleteCheckTaskCodeId(String codeId) {
+        List<TakeStockTask> tasks = queryCheckTaskCodeId(codeId);
+        TakeStockTask takeStockTask = tasks.get(0);
+        if (tasks.size() == 1) {
+            db.deleteCheckTask(takeStockTask.getId());
+            db.deleteCollectLists(db.queryCollect(takeStockTask.getName()));
+            db.deleteSkuCollectList(db.querySkuCollectByTaskCode(takeStockTask.getName()));
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public Boolean updateCheckTaskName(String InvalidName, String newName) {
+        List<TakeStockTask> tasks = queryCheckTask(InvalidName);
+        List<TakeStockEpcCollect> takeStockEpcCollects = db.queryCollect(InvalidName);
+        if (tasks.size() == 1) {
+            tasks.get(0).setName(newName);
+            db.saveCheckTask(tasks.get(0));
+            for (TakeStockEpcCollect takeStockEpcCollect : takeStockEpcCollects) {
+                takeStockEpcCollect.setTakeStockTask(newName);
+            }
+            db.updateCollectList(takeStockEpcCollects);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public List<TakeStockTask> getAllCheckTask() {
+        User currentUser = Utils.getCurrentUser();
+        if (currentUser == null) {
+            return db.getAllCheckTask();
+        } else {
+            String warehouseCode = currentUser.getWarehouseCode();
+            if (warehouseCode.equals("")) {
+                return db.getAllCheckTask();
+            } else {
+                return db.queryCheckTaskByWarehouseCode(currentUser.getWarehouseCode());
+            }
+        }
+    }
+
+    @Override
+    public List<TakeStockTask> queryCheckTask(String taskName) {
+        return db.queryCheckTask(taskName);
+    }
+
+    public List<TakeStockTask> queryCheckTaskCodeId(String codeId) {
+        return db.queryCheckTaskCodeId(codeId);
+    }
+
+    @Override
+    public List<TakeStockTask> detailSearch(String keyword) {
+        List<TakeStockTask> tasks = db.getAllCheckTask();
+        ArrayList<TakeStockTask> result = new ArrayList<>();
+        for (TakeStockTask task : tasks) {
+            String name = task.getName();
+            for (int i = 0; i < name.length(); i++) {
+                if (keyword.equals(task.getName().subSequence(0, i)) ||
+                        keyword.equals(task.getLowerCase().substring(0, i)) ||
+                        keyword.equals(task.getUpperCase().substring(0, i))) {
+                    result.add(task);
+                }
+            }
+        }
+        return result;
+    }
+
+}

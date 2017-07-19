@@ -1,0 +1,133 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    android:gravity="center"
+    android:orientation="vertical">
+
+
+    <RadioGroup
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+
+        <RadioButton
+            android:id="@+id/radio_connect_a8b"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10sp"
+            android:paddingBottom="5sp"
+            android:paddingTop="5sp"
+            android:text="手持枪连接"
+            android:textColor="#ff222222"
+            android:textSize="16.0sp" />
+
+        <RadioButton
+            android:id="@+id/radio_connect_h7"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10sp"
+            android:paddingBottom="5sp"
+            android:paddingTop="5sp"
+            android:text="手持柄连接"
+            android:textColor="#ff222222"
+            android:textSize="16.0sp" />
+
+    </RadioGroup>
+
+    <!-- tcp参数 -->
+    <LinearLayout
+        android:id="@+id/ll_tcp_para"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:visibility="invisible">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5.0dip"
+            android:layout_marginLeft="10.0dip"
+            android:layout_marginRight="10.0dip"
+            android:layout_marginTop="5.0dip"
+            android:text="@string/connect_tcp_ip_address"
+            android:textColor="#ff222222"
+            android:textSize="16.0sp" />
+
+        <EditText
+            android:id="@+id/et_address"
+            android:layout_width="160dp"
+            android:layout_height="wrap_content"
+            android:digits="0123456789."
+            android:gravity="center_vertical|center_horizontal"
+            android:inputType="text"
+            android:textSize="16sp" />
+
+        <Button
+            android:id="@+id/btn_search"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="搜索" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/ll_tcp_para2"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:visibility="invisible">
+
+        <TextView
+            android:layout_width="60dp"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5.0dip"
+            android:layout_marginLeft="10.0dip"
+            android:layout_marginRight="10.0dip"
+            android:layout_marginTop="5.0dip"
+            android:gravity="right"
+            android:text="@string/connect_tcp_ip_port"
+            android:textColor="#ff222222"
+            android:textSize="16sp" />
+
+        <EditText
+            android:id="@+id/et_port"
+            android:layout_width="160dp"
+            android:layout_height="wrap_content"
+            android:digits="0123456789."
+            android:gravity="center_vertical|center_horizontal"
+            android:inputType="text"
+            android:textSize="16sp" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20.0dip"
+        android:gravity="center_vertical|center_horizontal"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/tv_connect_reader"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:text="@string/connect" />
+
+        <Button
+            android:id="@+id/tv_cancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:text="@string/cancel" />
+    </LinearLayout>
+</LinearLayout>

@@ -1,0 +1,368 @@
+package com.lide.app.ui.outbound.createOrder;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.view.animation.LinearInterpolator;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import com.google.gson.internal.LinkedTreeMap;
+import com.lide.app.R;
+import com.lide.app.config.Configs;
+import com.lide.app.listener.OnFinishListener;
+import com.lide.app.persistence.util.DBOperator;
+import com.lide.app.persistence.util.SoundUtils;
+import com.lide.app.persistence.util.Utils;
+import com.lide.app.presenter.ScanPresenter;
+import com.lide.app.presenter.outbound.ManageOBOrderByCreatePresenter;
+import com.lide.app.ui.FragmentBase;
+import com.lide.app.ui.LoginActivity;
+import com.lide.app.ui.VInterface.IDataFragmentView;
+import com.lide.app.ui.inbound.LS.ErrorResultsFragment;
+import com.lubin.bean.OutBoundDetail;
+import com.lubin.bean.OutBoundOperate;
+import com.lubin.bean.OutBoundOrder;
+import com.lubin.dao.OutBoundDetailDao;
+import com.lubin.dao.OutBoundOperateDao;
+import com.lubin.dao.OutBoundOrderDao;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
+/**
+ * Created by lubin on 2016/11/21.
+ */
+
+public class ScanningEpcInOrderByCreateFragment extends FragmentBase implements IDataFragmentView<List<LinkedTreeMap>> {
+
+    @BindView(R.id.scan_order)
+    TextView scanOrder;
+    @BindView(R.id.scan_order_code)
+    TextView scanOrderCode;
+    @BindView(R.id.tv_order_sum)
+    TextView tvOrderSum;
+    @BindView(R.id.tv_scan_operate_sum)
+    TextView tvScanOperateSum;
+    @BindView(R.id.tv_scan_error_sum)
+    TextView tvScanErrorSum;
+    @BindView(R.id.scan_rotate)
+    ImageView scanRotate;
+    @BindView(R.id.iv_close_open)
+    ImageView ivCloseOpen;
+    @BindView(R.id.sum_num)
+    TextView sumNum;
+    @BindView(R.id.scan_state)
+    TextView scanState;
+    @BindView(R.id.btn_scan_result)
+    Button btnScanResult;
+    @BindView(R.id.btn_error_result)
+    Button btnErrorResult;
+
+    private View mView;
+    private Animation anim;
+    private int order;
+    private Timer mTimer;
+    private ScanOBOrderByCreateActivity mActivity;
+    private ScanPresenter scanPresenter;
+    final List<Map> mData = new ArrayList<>();
+    private List<String> tags = new ArrayList<>();
+    private DBOperator<OutBoundOperateDao, OutBoundOperate> operateDBOperator;
+    private DBOperator<OutBoundOrderDao, OutBoundOrder> orderDBOperator;
+    private ManageOBOrderByCreatePresenter outboundPresenter;
+    private DBOperator<OutBoundDetailDao, OutBoundDetail> detailDBOperator;
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        mView = inflater.inflate(R.layout.fragment_scan_rfid_ib, container, false);
+        ButterKnife.bind(this, mView);
+        mActivity = (ScanOBOrderByCreateActivity) getActivity();
+        initData();
+        initTask();
+        initView();
+        return mView;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        btnScanResult.setText("发货结果");
+        initScanPresenter();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        scanPresenter.setMode(0);
+        scanPresenter.removeListener();
+    }
+
+    private void initData() {
+        order = 0;
+        anim = AnimationUtils.loadAnimation(getActivity(), R.anim.san_anim);
+        anim.setInterpolator(new LinearInterpolator());
+        anim.setFillAfter(true);
+        anim.setFillBefore(false);
+        anim.setFillEnabled(false);
+
+        orderDBOperator = OutboundTransaction.getOrderDBOperator();
+        detailDBOperator = OutboundTransaction.getDetailDBOperator();
+        operateDBOperator = OutboundTransaction.getOperateDBOperator();
+    }
+
+    private void initTask() {
+        mTimer = new Timer();
+        mTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if (order > 10) {
+                    setAnimDuration(1000);
+                } else if (order >= 0 && order <= 10) {
+                    setAnimDuration(5000);
+                }
+            }
+        }, 0, 500);
+    }
+
+    private void initView() {
+        OutBoundOrder outBoundOrder = orderDBOperator.getItemByID(mActivity.orderId);
+        scanOrder.setText("单号:");
+        scanOrderCode.setText(outBoundOrder.getCode());
+    }
+
+    @NonNull
+    private List<String> refresh() {
+        List<String> datas = new ArrayList<>();
+        tags.clear();
+        mData.clear();
+        OutBoundOrder outBoundOrder = orderDBOperator.getItemByID(mActivity.orderId);
+        for (OutBoundOperate outBoundOperate : outBoundOrder.getOperates()) {
+            if (outBoundOperate.getBarcode() == null) {
+                datas.add(outBoundOperate.getTagValue());
+            }
+        }
+        tvOrderSum.setText(outBoundOrder.getQty() + "/" + outBoundOrder.getOperateQty());
+        tvScanOperateSum.setText("成功数：0");
+        tvScanErrorSum.setText("异常数：0");
+        sumNum.setText("0");
+        return datas;
+    }
+
+    private void initScanPresenter() {
+        //取出出库单已经采集到的epc，加载到内存中，用于排重
+        List<String> datas = refresh();
+
+        scanPresenter = new ScanPresenter(this);
+        scanPresenter.initData();
+        //设置读写器，只能采集标签，不能扫描条码
+        scanPresenter.setMode(1);
+        scanPresenter.initMap(datas);
+        scanPresenter.setReadDataModel(0);
+        scanPresenter.setCurrentSetting(ScanPresenter.Setting.stockRead);
+        scanPresenter.setListenerProtectModel(new OnFinishListener() {
+            @Override
+            public void OnFinish(String data) {
+                order++;
+                if (!tags.contains(data)) {
+                    tags.add(data);
+                }
+                SoundUtils.play(1);
+                sumNum.setText(String.valueOf(tags.size()));
+            }
+        });
+        outboundPresenter = new ManageOBOrderByCreatePresenter(this);
+    }
+
+    private void setAnimDuration(int durationMillis) {
+        if (anim.getDuration() != durationMillis) {
+            anim.setDuration(durationMillis);
+            anim.reset();
+        }
+        order = 0;
+    }
+
+    public void readOrClose() {
+        if (scanState.getText().toString().equals("点击开始")) {
+            scanRotate.setAnimation(anim);
+            scanRotate.setVisibility(View.VISIBLE);
+            btnScanResult.setEnabled(false);
+            btnScanResult.setBackground(greyBackground);
+            btnErrorResult.setEnabled(false);
+            btnErrorResult.setBackground(greyBackground);
+            mActivity.setViewEnabled(false);
+            scanState.setText("点击结束");
+            scanPresenter.startReadRfid();
+            tvScanOperateSum.setText("成功数：0");
+            tvScanErrorSum.setText("异常数：0");
+            sumNum.setText("0");
+            tags.clear();
+            mData.clear();
+        } else {
+            scanRotate.setVisibility(View.INVISIBLE);
+            scanRotate.clearAnimation();
+            btnScanResult.setEnabled(true);
+            btnScanResult.setBackground(commonBackground);
+            btnErrorResult.setEnabled(true);
+            btnErrorResult.setBackground(commonBackground);
+            mActivity.setViewEnabled(true);
+            scanState.setText("点击开始");
+            scanPresenter.stopReadRfid();
+            //停止时开始验证
+            saveData();
+        }
+    }
+
+    private void saveData() {
+        if (Utils.getApiKey() == null) {
+            Intent login = new Intent(getActivity(), LoginActivity.class);
+            login.putExtra("isAtNet", true);
+            startActivityForResult(login, Configs.LOGIN);
+            return;
+        }
+        if (tags.size() == 0) {
+            return;
+        }
+        //验证采集到的epc是否存在数据库中
+        outboundPresenter.SearchEpcList(tags);
+    }
+    //根据API返回的验证信息，如果是存在数据库的标签，生成标签明细存入本地数据库，如果是不存在数据库的标签，加入错误集合
+    @Override
+    public void ShowData(final List<LinkedTreeMap> linkedTreeMaps) {
+        startProgressDialog("生成中...");
+        runOnWorkThread(new Runnable() {
+            @Override
+            public void run() {
+                int succeed = 0;
+                List<String> errorEpc = new ArrayList<>();
+                List<OutBoundOperate> container = new ArrayList<>();
+                final OutBoundOrder outBoundOrder = orderDBOperator.getItemByID(mActivity.orderId);
+                for (LinkedTreeMap linkedTreeMap : linkedTreeMaps) {
+                    String epc = linkedTreeMap.get("epc").toString();
+                    if (linkedTreeMap.get("barcode") == null) {
+                        Map<String, String> map = new HashMap<>();
+                        map.put("epc", epc);
+                        map.put("status", "没有绑定");
+                        errorEpc.add(epc);
+                        tags.remove(epc);
+                        mData.add(map);
+                        continue;
+                    }
+
+                    OutBoundDetail outBoundDetail = null;
+                    for (OutBoundDetail boundDetail : outBoundOrder.getDetails()) {
+                        if (boundDetail.getBarcode().equals(linkedTreeMap.get("barcode"))) {
+                            outBoundDetail = boundDetail;
+                            break;
+                        }
+                    }
+                    if (outBoundDetail == null) {
+                        outBoundDetail = new OutBoundDetail();
+                        outBoundDetail.setQty(0);
+                        outBoundDetail.setOperateQty(0);
+                        outBoundDetail.setBarcode(linkedTreeMap.get("barcode").toString());
+                        outBoundDetail.setSkuName(linkedTreeMap.get("skuName").toString());
+                        outBoundDetail.setRefreshTime(new Date(System.currentTimeMillis()));
+                        outBoundDetail.setOutBoundOrder(outBoundOrder);
+                        detailDBOperator.insertData(outBoundDetail);
+                        outBoundOrder.resetDetails();
+                    }
+                    OutBoundOperate outBoundOperate = new OutBoundOperate();
+                    outBoundOperate.setOperateQty(1);
+                    outBoundOperate.setOutBoundOrder(outBoundOrder);
+                    outBoundOperate.setOutBoundDetail(outBoundDetail);
+                    outBoundOperate.setIsUpload(false);
+                    outBoundOperate.setTagValue(linkedTreeMap.get("epc").toString());
+                    container.add(outBoundOperate);
+                    outBoundDetail.resetOperates();
+                    outBoundOrder.resetOperates();
+
+                    Map<String, String> map = new HashMap<>();
+                    map.put("barcode", linkedTreeMap.get("barcode").toString());
+                    map.put("epc", linkedTreeMap.get("epc").toString());
+                    map.put("status", "正常");
+                    mData.add(map);
+                    tags.remove(epc);
+                    succeed++;
+                }
+                operateDBOperator.insertDatas(container);
+
+                int orderSum = 0;
+                for (OutBoundOperate outBoundOperate : outBoundOrder.getOperates()) {
+                    orderSum += outBoundOperate.getOperateQty();
+                }
+                outBoundOrder.setQty(orderSum);
+                outBoundOrder.setOperateQty(orderSum);
+                if (orderSum != 0)
+                    outBoundOrder.setStatus("处理中");
+                else
+                    outBoundOrder.setStatus("新单");
+                outBoundOrder.update();
+
+                for (OutBoundDetail outBoundDetail : outBoundOrder.getDetails()) {
+                    int detailSum = 0;
+                    for (OutBoundOperate outBoundOperate : outBoundDetail.getOperates()) {
+                        detailSum += outBoundOperate.getOperateQty();
+                    }
+                    outBoundDetail.setQty(detailSum);
+                    outBoundDetail.setOperateQty(detailSum);
+                    outBoundDetail.update();
+                }
+
+                final int size = succeed;
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        tvScanOperateSum.setText("成功数：" + String.valueOf(size));
+                        tvScanErrorSum.setText("异常数：" + String.valueOf(Integer.parseInt(sumNum.getText().toString()) - size));
+                        tvOrderSum.setText(outBoundOrder.getQty() + "/" + outBoundOrder.getOperateQty());
+                    }
+                });
+
+                for (String tag : tags) {
+                    Map<String, String> map = new HashMap<>();
+                    map.put("epc", tag);
+                    map.put("status", "异常");
+                    errorEpc.add(tag);
+                    mData.add(map);
+                }
+
+                scanPresenter.clearPartOfData(errorEpc);
+                tags.clear();
+                stopProgressDialog(null);
+            }
+        });
+    }
+
+    @OnClick({R.id.iv_close_open, R.id.btn_scan_result, R.id.btn_error_result})
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.iv_close_open:
+                readOrClose();
+                break;
+            case R.id.btn_scan_result:
+                mActivity.setCurrentView(3);
+                break;
+            case R.id.btn_error_result:
+                mActivity.setCurrentView(4);
+                ((ErrorResultsFragment) mActivity.mFragments.get(4)).showErrorResultsData(mData);
+                break;
+        }
+    }
+}

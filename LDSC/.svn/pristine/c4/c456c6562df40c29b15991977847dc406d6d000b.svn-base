@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:id="@+id/ll_search"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingLeft="5dp"
+        android:paddingRight="5dp">
+
+        <EditText
+            android:id="@+id/et_search"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/common_button_height"
+            android:layout_weight="1"
+            android:background="@drawable/edit_common"
+            android:drawableLeft="@mipmap/fangdajing"
+            android:drawablePadding="10dp"
+            android:hint="请输入查询信息"
+            android:inputType="number"
+            android:padding="10dp"
+            android:textColorHint="#ffdddddd"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/btn_search"
+            android:layout_width="55dp"
+            android:layout_height="@dimen/common_button_height"
+            android:layout_marginLeft="5dp"
+            android:background="@drawable/button_common"
+            android:text="查询"
+            android:textColor="@drawable/button_common_text" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="10dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="left"
+            android:text="#"
+            android:textSize="@dimen/text_size_middle" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="3"
+            android:layout_marginLeft="10dp"
+            android:text="条码"
+            android:textSize="@dimen/text_size_middle" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="right"
+            android:text="唯一码"
+            android:textSize="@dimen/text_size_middle" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1px"
+        android:background="@color/divider_view" />
+
+    <com.lide.app.persistence.view.xlist.XListView
+        android:id="@+id/lv_query_diff_epc"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="2dp"
+        android:divider="@color/transparent"
+        android:listSelector="@drawable/abc_list_selector_holo_dark" />
+
+</LinearLayout>

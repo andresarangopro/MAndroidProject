@@ -1,0 +1,262 @@
+package com.lubin.chj.modle;
+
+import android.util.Log;
+
+import com.google.gson.Gson;
+import com.lubin.chj.Listener.OnNetReqFinishListener;
+import com.lubin.chj.bean.PcInfo;
+import com.lubin.chj.bean.jsonToBean.QueryPCByCKpzhReturn;
+import com.lubin.chj.bean.jsonToBean.QueryPcReturn;
+import com.lubin.chj.modle.MInterface.IPickModel;
+import com.lubin.chj.utils.GlobleConfig;
+import com.lubin.chj.utils.SoapUtil;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * @author DaiJiCheng
+ * @time 2016/9/22  16:36
+ * @desc ${TODD}
+ */
+public class PickModelImpl implements IPickModel {
+
+    private QueryPcReturn mQueryPcReturn;
+    private QueryPCByCKpzhReturn mQueryPCByCKpzhReturn;
+
+    //凭证拣货查询
+    @Override
+    public void queryPCByCkpzh(Map<String, Object> map, final OnNetReqFinishListener listener) {
+        SoapUtil.GetWebServiceData(map, new OnNetReqFinishListener() {
+            @Override
+            public void OnNetReqFinish(Map<String, Object> hashMap) {
+                if (hashMap.get("result") != null) {
+                    String result = hashMap.get("result").toString();
+                    mQueryPCByCKpzhReturn = new QueryPCByCKpzhReturn().objectFromData(result);
+                    hashMap.put("returnCode", mQueryPCByCKpzhReturn.getReturnCode());
+                    hashMap.put("returnMsg", mQueryPCByCKpzhReturn.getReturnMsg());
+                } else {
+                    hashMap.put("returnCode", "9999");
+                    hashMap.put("returnMsg", "网络请求失败");
+                }
+                listener.OnNetReqFinish(hashMap);
+            }
+        });
+    }
+
+    @Override
+    public Map<String, Object> getHashMapForPZH(String pzbh) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("ckpzh", pzbh);
+        map.put("rightID", GlobleConfig.rightId);
+        map.put("doMethod", "QueryPCByCkpzh");
+        return map;
+    }
+
+    @Override
+    public List<QueryPCByCKpzhReturn.ListBean> getQueryPcBypzhListBean() {
+        List<QueryPCByCKpzhReturn.ListBean> list = mQueryPCByCKpzhReturn.getList();
+        List<QueryPCByCKpzhReturn.ListBean> container = new ArrayList<>();
+        for (int i = 0; i < list.size(); i++) {
+            QueryPCByCKpzhReturn.ListBean listBean = list.get(i);
+            if (listBean.getQybh() != null)
+                container.add(listBean);
+        }
+        //按照区域编号对数据集合排序
+        Collections.sort(container, new Comparator<QueryPCByCKpzhReturn.ListBean>() {
+            @Override
+            public int compare(QueryPCByCKpzhReturn.ListBean t1, QueryPCByCKpzhReturn.ListBean t2) {
+                int i = Integer.parseInt((String) t1.getQybh());
+                int j = Integer.parseInt((String) t2.getQybh());
+                if (i > j) {
+                    return 1;
+                }
+                if (i == j) {
+                    return 0;
+                }
+                return -1;
+            }
+        });
+        return container;
+    }
+
+    //直接拣货查询
+    @Override
+    public void queryPc(Map<String, Object> map, final OnNetReqFinishListener listener) {
+        SoapUtil.GetWebServiceData(map, new OnNetReqFinishListener() {
+            @Override
+            public void OnNetReqFinish(Map<String, Object> hashMap) {
+                Log.d("test", hashMap.toString());
+                if (hashMap.get("result") != null) {
+                    mQueryPcReturn = new QueryPcReturn().objectFromData(hashMap.get("result").toString());
+                    hashMap.put("returnCode", mQueryPcReturn.getReturnCode());
+                    hashMap.put("returnMsg", mQueryPcReturn.getReturnMsg());
+                } else {
+                    hashMap.put("returnCode", "9999");
+                    hashMap.put("returnMsg", "网络请求失败");
+                }
+                listener.OnNetReqFinish(hashMap);
+            }
+        });
+    }
+
+    @Override
+    public Map<String, Object> getHashMapForGw(String gwbh) {
+        Map<String, Object> map = new HashMap<>();
+
+        map.put("bhlx", "gwbh");
+        map.put("bh", gwbh);
+        map.put("rightID", GlobleConfig.rightId);
+        map.put("doMethod", "QueryPC");
+        return map;
+    }
+
+    @Override
+    public Map<String, Object> getHashMapForQybh(String qybh) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("bhlx", "qybh");
+        map.put("bh", qybh);
+        map.put("rightID", GlobleConfig.rightId);
+        map.put("doMethod", "QueryPC");
+        return map;
+    }
+
+    @Override
+    public Map<String, Object> getHashMap(String pchs) {
+        Map<String, Object> map = new HashMap<>();
+
+        map.put("bhlx", "pch");
+        map.put("bh", pchs);
+        map.put("rightID", GlobleConfig.rightId);
+        map.put("doMethod", "QueryPC");
+        return map;
+    }
+
+
+    @Override
+    public List<QueryPcReturn.ListBean> getQueryPcListBean() {
+        List<QueryPcReturn.ListBean> list = mQueryPcReturn.getList();
+        List<QueryPcReturn.ListBean> container = new ArrayList<>();
+        for (int i = 0; i < list.size(); i++) {
+            QueryPcReturn.ListBean listBean = list.get(i);
+            if (listBean.getQybh() != null)
+                container.add(listBean);
+        }
+        //按照区域编号对数据集合排序
+        Collections.sort(container, new Comparator<QueryPcReturn.ListBean>() {
+            @Override
+            public int compare(QueryPcReturn.ListBean t1, QueryPcReturn.ListBean t2) {
+                int i = Integer.parseInt((String) t1.getQybh());
+                int j = Integer.parseInt((String) t2.getQybh());
+                if (i > j) {
+                    return 1;
+                }
+                if (i == j) {
+                    return 0;
+                }
+                return -1;
+            }
+        });
+        return container;
+    }
+
+
+    //拣货
+    @Override
+    public void fetchPC(Map<String, Object> map, final OnNetReqFinishListener listener) {
+        SoapUtil.GetWebServiceData(map, new OnNetReqFinishListener() {
+            @Override
+            public void OnNetReqFinish(Map<String, Object> hashMap) {
+                if (hashMap.get("result") != null) {
+                    JSONObject result = null;
+                    String returnCode = null;
+                    String returnMsg = null;
+                    String list = null;
+                    try {
+                        result = new JSONObject(hashMap.get("result").toString());
+                        returnCode = result.getString("returnCode");
+                        returnMsg = result.getString("returnMsg");
+                        list = result.get("list").toString();
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    hashMap.put("returnCode", returnCode);
+                    hashMap.put("returnMsg", returnMsg);
+                    hashMap.put("list", list);
+                } else {
+                    hashMap.put("returnCode", "9999");
+                    hashMap.put("returnMsg", "网络请求失败");
+                }
+                listener.OnNetReqFinish(hashMap);
+            }
+        });
+    }
+
+    /**
+     * @param list
+     * @param ckpzh 直接拣货直接传空  凭证号拣货传凭证号
+     * @return
+     */
+    @Override
+    public Map<String, Object> getHashMapFechPc(List<PcInfo> list, String ckpzh) {
+        Map<String, Object> map = new HashMap<>();
+        String jsonPcInfoList = new Gson().toJson(list);
+        map.put("jsonPcInfoList", jsonPcInfoList);
+        map.put("ckpzh", ckpzh);
+        map.put("rightID", GlobleConfig.rightId);
+        map.put("doMethod", "FetchPC");
+        return map;
+    }
+
+    //未取货原因保存
+    @Override
+    public void noFetching(Map<String, Object> map, final OnNetReqFinishListener listener) {
+        SoapUtil.GetWebServiceData(map, new OnNetReqFinishListener() {
+            @Override
+            public void OnNetReqFinish(Map<String, Object> hashMap) {
+                if (hashMap.get("result") != null) {
+                    try {
+                        JSONObject result = new JSONObject(hashMap.get("result").toString());
+                        hashMap.put("returnCode", result.getString("returnCode"));
+                        hashMap.put("returnMsg", result.getString("returnMsg"));
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    hashMap.put("returnCode", "9999");
+                    hashMap.put("returnMsg", "网络请求失败");
+                }
+                listener.OnNetReqFinish(hashMap);
+            }
+        });
+    }
+
+    /**
+     * @param list PcInfo只需要包含“批次号-pch"和“未取货原因-wqhyy”两个属性
+     * @param ckpzh
+     *@param wqhyy @return
+     */
+    @Override
+    public Map<String, Object> getHashMapNofetching(List<PcInfo> list, String ckpzh, String wqhyy) {
+        Map<String, Object> map = new HashMap<>();
+
+        String s = new Gson().toJson(list);
+        map.put("jsonPcInfoList", s);
+        map.put("ckpzh",ckpzh);
+        map.put("bz",wqhyy);
+        map.put("rightID", GlobleConfig.rightId);
+        map.put("doMethod", "FinishFetching");
+        return map;
+    }
+
+
+}

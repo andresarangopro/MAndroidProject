@@ -1,0 +1,66 @@
+package com.lide.app.presenter.takeStock;
+
+import com.lide.app.MApplication;
+import com.lide.app.listener.OnLoadFinishListener;
+import com.lide.app.model.MInterface.IUploadSkuCollectModel;
+import com.lide.app.model.UploadSkuCollectModelImpl;
+import com.lide.app.presenter.PInterface.IUploadCollectBySkuPresenter;
+import com.lide.app.service.DbService;
+import com.lide.app.ui.VInterface.IUploadSkuCollectView;
+import com.lide.app.persistence.util.Utils;
+import com.lubin.bean.TakeStockSkuCollect;
+
+import java.util.Map;
+
+/**
+ * Created by lubin on 2016/10/20.
+ */
+
+public class UploadSkuCollectPresenterImpl implements IUploadCollectBySkuPresenter {
+    DbService db;
+    IUploadSkuCollectView view;
+    IUploadSkuCollectModel model;
+
+    public UploadSkuCollectPresenterImpl(IUploadSkuCollectView view) {
+        this.view = view;
+        this.model = new UploadSkuCollectModelImpl();
+        db = DbService.getInstance(MApplication.getInstance());
+    }
+
+    public void getAllSkuCollectByTaskCode() {
+        view.ShowData(db.querySkuCollectByTaskCode(Utils.getCurrentTask().getId()));
+    }
+
+    public void getAllSkuCollectByOrderCode(String orderCode) {
+        view.showAllSkuCollect(db.querySkuCollectByOrderCode(orderCode));
+    }
+
+    public void addSkuCollect(TakeStockSkuCollect takeStockSkuCollect) {
+        db.saveSkuCollect(takeStockSkuCollect);
+    }
+
+    public void deleteSkuCollect(TakeStockSkuCollect takeStockSkuCollect) {
+        db.deleteSkuCollect(takeStockSkuCollect);
+    }
+
+    public void updateSkuCollect(TakeStockSkuCollect takeStockSkuCollect) {
+        db.updateSkuCollect(takeStockSkuCollect);
+    }
+
+    public void uploadAllSkuCollectByTaskCode() {
+        view.startProgressDialog("上传中...");
+        model.upLoadSkuCollect(model.getMapForUploadSkuByTaskCode(), new OnLoadFinishListener() {
+            @Override
+            public void OnLoadFinish(Map<String, String> map) {
+                view.stopProgressDialog(null);
+                if (map.get("statusCode").equals("200")) {
+                    model.changeSkuCollectStatus();
+                    view.showDialog("上传成功！");
+                } else {
+                    view.showDialog(map.get("result"));
+                }
+            }
+        });
+    }
+
+}

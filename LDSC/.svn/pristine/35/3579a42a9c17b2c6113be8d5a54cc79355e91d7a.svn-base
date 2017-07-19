@@ -1,0 +1,81 @@
+package com.lide.app.model;
+
+import com.lide.app.MApplication;
+import com.lide.app.persistence.util.DBOperator;
+import com.lide.app.persistence.util.Utils;
+import com.lubin.bean.TakeStockEpcCollect;
+import com.lubin.dao.TakeStockEpcCollectDao;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class EPCCollectModel {
+
+    DBOperator<TakeStockEpcCollectDao, TakeStockEpcCollect> operator;
+    List<TakeStockEpcCollect> takeStockEpcCollects = new ArrayList<>();
+
+    public EPCCollectModel() {
+        operator = DBOperator.getOperator(MApplication.getDaoSession(MApplication.getInstance()).getTakeStockEpcCollectDao(), TakeStockEpcCollect.class);
+    }
+
+
+    public List<TakeStockEpcCollect> getEpcList(String type) {
+        List<TakeStockEpcCollect> list = operator.getItemsByParameters(
+                "T.'EPC' ASC"
+                , TakeStockEpcCollectDao.Properties.TakeStockTask.eq(Utils.getCurrentTask().getName()));
+        if (list != null) {
+            takeStockEpcCollects.addAll(list);
+        }
+        if (type.equals("ALL")) {
+            return takeStockEpcCollects;
+        } else {
+            return takeStockEpcCollects;
+        }
+    }
+
+    public List<TakeStockEpcCollect> searchDetailEpc(String keyword) {
+        List<TakeStockEpcCollect> takeStockEpcCollects = operator.getItemsByParameters(
+                "T.'EPC' ASC",
+                TakeStockEpcCollectDao.Properties.Epc.like(keyword));
+        return takeStockEpcCollects;
+    }
+
+    /*public void writeToSDCardFile() {
+        int order = 0;
+        StringBuilder sb = new StringBuilder();
+        sb.append("序号").append("\t条码").append("\t\t唯一码\n");
+        for (EPC epc : epcs) {
+            sb.append(order++);
+            sb.append("\t");
+            Sku sku = epc.getSku();
+            if (sku != null) {
+                sb.append(sku.getSkuName());
+            }
+            sb.append("\t\t");
+            sb.append(epc.getEpc());
+            sb.append("\n");
+        }
+        WriterUtil.writeToSDCardFile("任务数据", "思创理德", sb.toString());
+    }*/
+
+    /*public void loadDataFromNet(final OnLoadFinishListener listener) {
+        Map<String, String> map = new HashMap<>();
+        //api方法
+        String apiMethod = "/api/skuTag/batchGetBarcodeList";
+        String postUrl = apiUrl + apiMethod;
+
+        SearchEpcList jsonForUpload = new SearchEpcList();
+        jsonForUpload.orderByField = "barcode";
+        jsonForUpload.orderByMethod = "ASC";
+        jsonForUpload.tagList = new ArrayList<>();
+        List<EPC> epcs = db.queryEpc(All);
+        for (EPC epc : epcs) {
+            if (epc.getSkuId() == null) jsonForUpload.tagList.add(epc.getEpc());
+        }
+
+        String requestJsonData = new Gson().toJson(jsonForUpload);
+
+        NetWorkUtil.startNetWord(requestJsonData, postUrl, listener);
+
+    }*/
+}

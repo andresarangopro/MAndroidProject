@@ -1,0 +1,286 @@
+package com.lide.app.ui.inbound.LS;
+
+import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.view.KeyEvent;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.inputmethod.EditorInfo;
+import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.TextView;
+
+import com.google.gson.internal.LinkedTreeMap;
+import com.lide.app.MApplication;
+import com.lide.app.R;
+import com.lide.app.adapter.ScanningBySkuAdapter;
+import com.lide.app.listener.OnFinishListener;
+import com.lide.app.persistence.util.DBOperator;
+import com.lide.app.persistence.util.SPUtils;
+import com.lide.app.persistence.util.SoundUtils;
+import com.lide.app.presenter.ScanPresenter;
+import com.lide.app.presenter.inbound.InBoundPresenter;
+import com.lide.app.ui.FragmentBase;
+import com.lide.app.ui.VInterface.IDataFragmentView;
+import com.lide.app.ui.inbound.InboundTransaction;
+import com.lubin.bean.InBoundCase;
+import com.lubin.bean.InBoundDetail;
+import com.lubin.bean.InBoundOperate;
+import com.lubin.bean.InBoundOrder;
+import com.lubin.dao.InBoundCaseDao;
+import com.lubin.dao.InBoundDetailDao;
+import com.lubin.dao.InBoundOperateDao;
+import com.lubin.dao.InBoundOrderDao;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+
+/**
+ * Created by lubin on 2016/12/1.
+ */
+
+public class ScanningSkuForMixFragment extends FragmentBase implements IDataFragmentView<List<LinkedTreeMap>> {
+
+    @BindView(R.id.scan_et_sku)
+    EditText etSku;
+    @BindView(R.id.scan_et_num)
+    EditText etNum;
+    @BindView(R.id.all_num)
+    TextView tvAllNum;
+    @BindView(R.id.scan_lv_sku)
+    ListView scanLvSku;
+
+    private View mView;
+    private InboundActivity mActivity;
+    private ScanningBySkuAdapter mAdapter;
+    private List<InBoundDetail> Details = new ArrayList<>();
+    private DBOperator<InBoundCaseDao, InBoundCase> caseDBOperator;
+    private DBOperator<InBoundOrderDao, InBoundOrder> orderDBOperator;
+    private DBOperator<InBoundDetailDao, InBoundDetail> detailDBOperator;
+    private DBOperator<InBoundOperateDao, InBoundOperate> operateDBOperator;
+    private ScanPresenter scanPresenter;
+    private InBoundPresenter inBoundPresenter;
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        mView = inflater.inflate(R.layout.fragment_scan_barcode, container, false);
+        ButterKnife.bind(this, mView);
+        initView();
+        caseDBOperator = InboundTransaction.getCaseDBOperator();
+        orderDBOperator = InboundTransaction.getOrderDBOperator();
+        detailDBOperator = InboundTransaction.getDetailDBOperator();
+        operateDBOperator = InboundTransaction.getOperateDBOperator();
+        return mView;
+    }
+
+    @Override
+    public void setUserVisibleHint(boolean isVisibleToUser) {
+        super.setUserVisibleHint(isVisibleToUser);
+        if (isVisibleToUser) {
+            refreshData();
+            initScanPresenter();
+        } else {
+            if (scanPresenter == null) return;
+            scanPresenter.setMode(0);
+            scanPresenter.removeListener();
+        }
+    }
+
+    private void initView() {
+        etSku.setImeOptions(EditorInfo.IME_ACTION_SEND);
+        etSku.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (event != null)
+                    if (event.getAction() == KeyEvent.ACTION_UP) return true;
+                if (actionId == EditorInfo.IME_ACTION_SEND || actionId == 0) {
+                    setEtSku(etSku.getText().toString());
+                    return true;
+                }
+                return false;
+            }
+        });
+        etNum.setImeOptions(EditorInfo.IME_ACTION_SEND);
+        etNum.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (event != null)
+                    if (event.getAction() == KeyEvent.ACTION_UP) return true;
+                if (actionId == EditorInfo.IME_ACTION_SEND || actionId == 0) {
+                    setEtSku(etSku.getText().toString());
+                    return true;
+                }
+                return false;
+            }
+        });
+
+        mAdapter = new ScanningBySkuAdapter(getActivity(), Details);
+        scanLvSku.setAdapter(mAdapter);
+
+        mActivity = (InboundActivity) getActivity();
+    }
+
+    private void refreshData() {
+        List<InBoundDetail> container = new ArrayList<>();
+        if (mActivity.orderId != 0) {
+            Iterator<InBoundDetail> iterator = detailDBOperator.getItemsByParameters("date DESC",
+                    InBoundDetailDao.Properties.InBoundOrderId.eq(mActivity.orderId)).iterator();
+            while (iterator.hasNext()) {
+                InBoundDetail next = iterator.next();
+                boolean flag = false;
+                for (InBoundDetail inBoundDetail : container) {
+                    if (inBoundDetail.getBarcode().equals(next.getBarcode())) {
+                        inBoundDetail.setQty(inBoundDetail.getQty() + next.getQty());
+                        inBoundDetail.setOperateQty(inBoundDetail.getOperateQty() + next.getOperateQty());
+                        flag = true;
+                    }
+                }
+                if (!flag) {
+                    InBoundDetail inBoundDetail = new InBoundDetail();
+                    inBoundDetail.setQty(next.getQty());
+                    inBoundDetail.setOperateQty(next.getOperateQty());
+                    inBoundDetail.setBarcode(next.getBarcode());
+                    inBoundDetail.setSkuName(next.getSkuName());
+                    inBoundDetail.setDate(next.getDate());
+                    container.add(inBoundDetail);
+                }
+            }
+            InBoundOrder inBoundOrder = orderDBOperator.getItemByID(mActivity.orderId);
+            tvAllNum.setText(inBoundOrder.getQty() + "/" + inBoundOrder.getOperateQty());
+        } /*else {
+            InBoundCase inBoundCase = caseDBOperator.getItemByID(mActivity.caseId);
+            List<InBoundDetail> details = detailDBOperator.getItemsByParameters("date DESC",
+                    InBoundDetailDao.Properties.InBoundCaseId.eq(mActivity.caseId));
+            container.addAll(details);
+            tvAllNum.setText(inBoundCase.getQty() + "/" + inBoundCase.getOperateQty());
+        }*/
+
+        mAdapter.addAll(container);
+        etSku.setText("");
+        etNum.setText("1");
+    }
+
+    private void initScanPresenter() {
+        scanPresenter = new ScanPresenter(this);
+        scanPresenter.initData();
+        scanPresenter.setMode(2);
+        scanPresenter.setListener(new OnFinishListener() {
+            @Override
+            public void OnFinish(String data) {
+                SoundUtils.play(1);
+                setEtSku(data);
+            }
+        });
+
+        inBoundPresenter = new InBoundPresenter(this);
+    }
+
+    public void setEtSku(String barcode) {
+        etSku.setText(barcode);
+        int num = Integer.parseInt(etNum.getText().toString());
+        if (barcode.isEmpty()) {
+            showDialog("条码不能为空");
+            return;
+        }
+        updateDetailForMixed(num, barcode);
+    }
+
+    private void updateDetailForMixed(int num, String barcode) {
+        InBoundDetail detail = null;
+        InBoundOperate operate = null;
+        try {
+            detail = detailDBOperator.getItemsByParameters(null
+                    , InBoundDetailDao.Properties.Barcode.eq(barcode)
+                    , InBoundDetailDao.Properties.InBoundOrderId.eq(mActivity.orderId)).get(0);
+            operate = operateDBOperator.getItemsByParameters(null
+                    , InBoundOperateDao.Properties.Barcode.eq(barcode)
+                    , InBoundOperateDao.Properties.InBoundOrderId.eq(mActivity.orderId)).get(0);
+        } catch (Exception e) {
+            ShowToast("条码不再单据范围内~");
+            return;
+        }
+        if (SPUtils.get(MApplication.getInstance(), "inboundAllowExceed", "false").toString().equals("true")) {
+            if ((num + operate.getOperateQty()) < 0) {
+                ShowToast("数量超出~");
+            } else {
+                operate.setOperateQty(operate.getOperateQty() + num);
+                operate.setIsUpload(false);
+                if (operate.getMultiBarcodeId() == null) {
+                    inBoundPresenter.createMultiBarcode(operate);
+                } else {
+                    operate.update();
+                }
+            }
+        } else {
+            if (detail.getQty() < (detail.getOperateQty() + num) || (num + operate.getOperateQty()) < 0) {
+                ShowToast("数量超出~");
+            } else {
+                operate.setOperateQty(operate.getOperateQty() + num);
+                operate.setIsUpload(false);
+                if (operate.getMultiBarcodeId() == null) {
+                    inBoundPresenter.createMultiBarcode(operate);
+                } else {
+                    operate.update();
+                }
+            }
+        }
+
+        InBoundOrder inBoundOrder = detail.getInBoundOrder();
+        recount(inBoundOrder);
+    }
+
+    private void recount(InBoundOrder inBoundOrder) {
+        inBoundOrder.resetOperates();
+        inBoundOrder.resetDetails();
+        int orderSum = 0;
+        for (InBoundOperate inBoundOperate : inBoundOrder.getOperates()) {
+            orderSum += inBoundOperate.getOperateQty();
+        }
+        if (orderSum == 0) inBoundOrder.setStatus(0);
+        else inBoundOrder.setStatus(1);
+        inBoundOrder.setOperateQty(orderSum);
+        inBoundOrder.update();
+        List<InBoundCase> cases = new ArrayList<>();
+        List<InBoundDetail> details = new ArrayList<>();
+        for (InBoundCase inBoundCase : inBoundOrder.getCases()) {
+            inBoundCase.resetOperates();
+            inBoundCase.resetDetails();
+            int caseSum = 0;
+            for (InBoundOperate inBoundOperate : inBoundCase.getOperates()) {
+                caseSum += inBoundOperate.getOperateQty();
+            }
+            if (caseSum == 0) inBoundCase.setStatus(0);
+            else inBoundCase.setStatus(1);
+            inBoundCase.setOperateQty(caseSum);
+            cases.add(inBoundCase);
+            for (InBoundDetail inBoundDetail : inBoundCase.getDetails()) {
+                inBoundDetail.resetOperates();
+                int detailSum = 0;
+                for (InBoundOperate inBoundOperate : inBoundDetail.getOperates()) {
+                    detailSum += inBoundOperate.getOperateQty();
+                }
+                inBoundDetail.setOperateQty(detailSum);
+                details.add(inBoundDetail);
+            }
+        }
+        caseDBOperator.updateData(cases);
+        detailDBOperator.updateData(details);
+        refreshData();
+    }
+
+    @Override
+    public void startScan() {
+        scanPresenter.startScanBarcode();
+    }
+
+    @Override
+    public void ShowData(List<LinkedTreeMap> linkedTreeMaps) {
+
+    }
+}

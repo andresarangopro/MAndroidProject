@@ -1,0 +1,127 @@
+package com.lubin.chj.bean;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * @author DaiJiCheng
+ * @time 2016/9/12  10:35
+ * @desc ${2.2 批次(产品)查询接口--PcInfo 批次(产品)类}
+ */
+public class PcInfo {
+
+
+    public String pch; //批次号
+    public String qybh; //区域编号
+    public String wqhyy; //未取货原因
+    public String pdjg; //盘点结果
+    public String dqqybh; //当前区域编号
+    private String gtbh;
+    private String gwbh;
+
+    public PcInfo(String pch, String dqqybh, String wqhyy, String qybh, String pdjg) {
+        this.pch = pch;
+        this.dqqybh = dqqybh;
+        this.wqhyy = wqhyy;
+        this.qybh = qybh;
+        this.pdjg = pdjg;
+    }
+    public String getGtbh() {
+        return gtbh;
+    }
+
+    public void setGtbh(String gtbh) {
+        this.gtbh = gtbh;
+    }
+
+    public String getGwbh() {
+        return gwbh;
+    }
+
+    public void setGwbh(String gwbh) {
+        this.gwbh = gwbh;
+    }
+
+
+    public static PcInfo objectFromData(String str) {
+
+        return new Gson().fromJson(str, PcInfo.class);
+    }
+
+    public static List<PcInfo> arrayPcInfoFromData(String str) {
+
+        Type listType = new TypeToken<ArrayList<PcInfo>>() {
+        }.getType();
+
+        return new Gson().fromJson(str, listType);
+    }
+
+    public String getPdjg() {
+        return pdjg;
+    }
+
+    public void setPdjg(String pdjg) {
+        this.pdjg = pdjg;
+    }
+
+    public String getDqqybh() {
+        return dqqybh;
+    }
+
+    public void setDqqybh(String dqqybh) {
+        this.dqqybh = dqqybh;
+    }
+
+    public PcInfo(String wqhyy, String qybh, String pch) {
+        this.wqhyy = wqhyy;
+        this.qybh = qybh;
+        this.pch = pch;
+    }
+
+    public PcInfo() {
+    }
+
+    public String getWqhyy() {
+        return wqhyy;
+    }
+
+    public void setWqhyy(String wqhyy) {
+        this.wqhyy = wqhyy;
+    }
+
+    public PcInfo(String qybh, String pch) {
+        this.qybh = qybh;
+        this.pch = pch;
+    }
+
+    public String getQybh() {
+        return qybh;
+    }
+
+    public void setQybh(String qybh) {
+        this.qybh = qybh;
+    }
+
+    public String getPch() {
+        return pch;
+    }
+
+    public void setPch(String pch) {
+        this.pch = pch;
+    }
+
+    @Override
+    public String toString() {
+        return "PcInfo{" +
+                "pch='" + pch + '\'' +
+                ", qybh='" + qybh + '\'' +
+                ", wqhyy='" + wqhyy + '\'' +
+                ", pdjg='" + pdjg + '\'' +
+                ", dqqybh='" + dqqybh + '\'' +
+                '}';
+    }
+}

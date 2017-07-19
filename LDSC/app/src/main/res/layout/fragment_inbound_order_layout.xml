@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:background="@android:color/white"
+    android:orientation="vertical"
+    android:layout_height="match_parent">
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="已下载的订单列表"
+            android:textColor="@color/management_text"
+            android:padding="5dp"
+            android:textSize="@dimen/text_size_small"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="左滑删除/审核"
+            android:layout_gravity="right|center_vertical"
+            android:textColor="@color/management_text"
+            android:padding="5dp"
+            android:textSize="@dimen/text_size_small"/>
+    </FrameLayout>
+
+    <com.lide.app.persistence.widget.view.SwipeListView
+        android:id="@+id/swipe_lv"
+        android:layout_width="match_parent"
+        android:layout_weight="1"
+        android:layout_margin="3dp"
+        android:layout_height="0dp">
+    </com.lide.app.persistence.widget.view.SwipeListView>
+
+    <Button
+        android:id="@+id/goods_order_upload"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_alignParentBottom="true"
+        android:background="@color/bg_color_base"
+        android:text="单据下载"
+        android:visibility="gone"
+        android:textColor="@color/white"
+        android:textSize="20sp" />
+</LinearLayout>
+

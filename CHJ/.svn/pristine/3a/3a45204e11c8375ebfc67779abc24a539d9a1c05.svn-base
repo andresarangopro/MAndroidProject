@@ -1,0 +1,71 @@
+package com.lubin.chj.modle;
+
+import android.util.Log;
+
+import com.google.gson.Gson;
+import com.lubin.chj.Listener.OnNetReqFinishListener;
+import com.lubin.chj.bean.PcInfo;
+import com.lubin.chj.bean.jsonToBean.StoreReturn;
+import com.lubin.chj.modle.MInterface.IStorePcModel;
+import com.lubin.chj.utils.GlobleConfig;
+import com.lubin.chj.utils.SoapUtil;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * @author DaiJiCheng
+ * @time 2016/9/21  16:30
+ * @desc ${TODD}
+ */
+public class StorePcModelImpl implements IStorePcModel {
+
+    private StoreReturn storeReturn;
+    public static boolean mIngore = false;
+
+    @Override
+    public void store(Map<String, Object> map, final OnNetReqFinishListener listener) {
+
+        SoapUtil.GetWebServiceData(map, new OnNetReqFinishListener() {
+            @Override
+            public void OnNetReqFinish(Map<String, Object> hashMap) {
+                Log.d("test", hashMap.toString());
+                Object result = hashMap.get("result");
+                if (result != null) {
+                    storeReturn = StoreReturn.objectFromData(result.toString());
+                    hashMap.put("returnCode", storeReturn.getReturnCode());
+                    hashMap.put("returnMsg", storeReturn.getReturnMsg());
+                } else {
+                    hashMap.put("returnCode", "9999");
+                    hashMap.put("returnMsg", "网络请求失败");
+                }
+
+                listener.OnNetReqFinish(hashMap);
+            }
+        });
+
+    }
+
+    public Map<String, Object> getHashMap(List<PcInfo> pcInfos, String qybh) {
+        HashMap<String, Object> hashMap;
+        for (PcInfo pc : pcInfos) {
+            pc.setQybh(qybh);
+        }
+
+        String jsonList = new Gson().toJson(pcInfos);
+        hashMap = new HashMap();
+        hashMap.put("jsonPcInfoList", jsonList);
+        hashMap.put("rightID", GlobleConfig.rightId);
+        hashMap.put("ignore", mIngore);
+        hashMap.put("doMethod", "StoragePC");
+        return hashMap;
+    }
+
+    @Override
+    public List<StoreReturn.ListBean> getListBean() {
+        return storeReturn.getList();
+    }
+
+}

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/LDSC_DHC_TRUNK.iml" filepath="$PROJECT_DIR$/LDSC_DHC_TRUNK.iml" />
+      <module fileurl="file://$PROJECT_DIR$/androidextendlib/androidextendlib.iml" filepath="$PROJECT_DIR$/androidextendlib/androidextendlib.iml" />
+      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/daogen/daogen.iml" filepath="$PROJECT_DIR$/daogen/daogen.iml" />
+    </modules>
+  </component>
+</project>

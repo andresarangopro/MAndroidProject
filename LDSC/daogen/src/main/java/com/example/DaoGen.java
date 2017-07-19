@@ -1,0 +1,189 @@
+package com.example;
+
+
+import org.greenrobot.greendao.generator.DaoGenerator;
+import org.greenrobot.greendao.generator.Entity;
+import org.greenrobot.greendao.generator.Property;
+import org.greenrobot.greendao.generator.Schema;
+import org.greenrobot.greendao.generator.ToMany;
+
+public class DaoGen {
+    public static void main(String args[]) throws Exception {
+        Schema schema;
+        schema = new Schema(11, "com.lubin.bean");
+        schema.setDefaultJavaPackageDao("com.lubin.dao");
+        //用户表
+        Entity userBean = schema.addEntity("User");
+        userBean.addIdProperty();
+        userBean.implementsSerializable();
+        userBean.addStringProperty("userName");
+        userBean.addStringProperty("password");
+        userBean.addStringProperty("warehouseCode");
+        userBean.addStringProperty("apiKey");
+        userBean.addStringProperty("warehouseId");
+        userBean.addDateProperty("date");
+        //盘点单表
+        Entity takeStockOrder = schema.addEntity("TakeStockOrder");
+        takeStockOrder.addIdProperty();
+        takeStockOrder.addStringProperty("code");
+        takeStockOrder.addStringProperty("takeStockId");
+        takeStockOrder.addStringProperty("warehouseName");
+        //任务表
+        Entity checkTask = schema.addEntity("TakeStockTask");
+        checkTask.implementsSerializable();
+        checkTask.addIdProperty();
+        checkTask.addStringProperty("name");
+        checkTask.addStringProperty("warehouseCode");
+        checkTask.addStringProperty("codeId");
+        checkTask.addIntProperty("realPoint");
+        checkTask.addBooleanProperty("complete");
+        checkTask.addDateProperty("date");
+        checkTask.addStringProperty("upperCase");
+        checkTask.addStringProperty("lowerCase");
+        checkTask.addIntProperty("mode");
+        //一个用户对多条任务
+        Property userId = checkTask.addLongProperty("userId").getProperty();
+        checkTask.addToOne(userBean, userId);
+        ToMany userToManyCheckTask = userBean.addToMany(checkTask, userId);
+        userToManyCheckTask.setName("tasks");
+        //一个盘点单对多条任务
+        Property orderId = checkTask.addLongProperty("orderId").getProperty();
+        checkTask.addToOne(takeStockOrder, orderId);
+        ToMany orderToManyCheckTask = takeStockOrder.addToMany(checkTask, orderId);
+        orderToManyCheckTask.setName("tasks");
+
+        //采集表
+        Entity collect = schema.addEntity("TakeStockEpcCollect");
+        collect.addIdProperty();
+        collect.implementsSerializable();
+        collect.addStringProperty("taskId");
+        collect.addStringProperty("epc");
+        collect.addBooleanProperty("isUpload");
+        //采集表(sku)
+        Entity skuCollect = schema.addEntity("TakeStockSkuCollect");
+        skuCollect.addIdProperty();
+        skuCollect.implementsSerializable();
+        skuCollect.addStringProperty("taskId");
+        skuCollect.addStringProperty("barcode");
+        skuCollect.addDateProperty("date");
+        skuCollect.addIntProperty("num");
+        skuCollect.addBooleanProperty("isUpload");
+
+        //-----------------------------------入库-------------------------------------------
+        //入库单表
+        Entity inBoundOrder = schema.addEntity("InBoundOrder");
+        inBoundOrder.addIdProperty();
+        inBoundOrder.addStringProperty("code");
+        inBoundOrder.addStringProperty("orderId");
+        inBoundOrder.addStringProperty("formWarehouseName");
+        inBoundOrder.addStringProperty("toWarehouseCode");
+        inBoundOrder.addStringProperty("inboundMode");
+        inBoundOrder.addStringProperty("date");
+        inBoundOrder.addDateProperty("dateAtLocation");
+        inBoundOrder.addIntProperty("qty");
+        inBoundOrder.addIntProperty("operateQty");
+        inBoundOrder.addIntProperty("status");
+        //入库箱表
+        Entity inBoundCase = schema.addEntity("InBoundCase");
+        inBoundCase.addIdProperty();
+        inBoundCase.addIntProperty("qty");
+        inBoundCase.addIntProperty("operateQty");
+        inBoundCase.addStringProperty("code");
+        inBoundCase.addStringProperty("caseId");
+        inBoundCase.addIntProperty("status");
+        //一个入库单对多个入库箱
+        Property inBoundCasesTOOrder = inBoundCase.addLongProperty("inBoundOrderId").getProperty();
+        inBoundCase.addToOne(inBoundOrder, inBoundCasesTOOrder);
+        ToMany orderToManyCase = inBoundOrder.addToMany(inBoundCase, inBoundCasesTOOrder);
+        orderToManyCase.setName("cases");
+        //入库表sku明细
+        Entity inBoundLink = schema.addEntity("InBoundDetail");
+        inBoundLink.addIdProperty();
+        inBoundLink.addIntProperty("qty");
+        inBoundLink.addDateProperty("date");
+        inBoundLink.addStringProperty("skuName");
+        inBoundLink.addIntProperty("operateQty");
+        inBoundLink.addStringProperty("barcode");
+        inBoundLink.addStringProperty("multiBarcodeId");
+        //一个入库单对多个sku明细
+        Property inBoundLinkToOrder = inBoundLink.addLongProperty("inBoundOrderId").getProperty();
+        inBoundLink.addToOne(inBoundOrder, inBoundLinkToOrder);
+        ToMany orderToManyLink = inBoundOrder.addToMany(inBoundLink, inBoundLinkToOrder);
+        orderToManyLink.setName("Details");
+        //一个入库箱对多个sku明细
+        Property inBoundLinkToCase = inBoundLink.addLongProperty("inBoundCaseId").getProperty();
+        inBoundLink.addToOne(inBoundCase, inBoundLinkToCase);
+        ToMany caseToManyLink = inBoundCase.addToMany(inBoundLink, inBoundLinkToCase);
+        caseToManyLink.setName("Details");
+        //入库表明细
+        Entity inBound = schema.addEntity("InBoundOperate");
+        inBound.addIdProperty();
+        inBound.implementsSerializable();
+        inBound.addStringProperty("barcode");
+        inBound.addStringProperty("epc");
+        inBound.addStringProperty("deviceId");
+        inBound.addStringProperty("multiBarcodeId");
+        inBound.addIntProperty("qty");
+        inBound.addIntProperty("operateQty");
+        inBound.addBooleanProperty("isUpload");
+        //一个入库单对多个入库信息
+        Property inBoundToOrder = inBound.addLongProperty("inBoundOrderId").getProperty();
+        inBound.addToOne(inBoundOrder, inBoundToOrder);
+        ToMany orderToManyInBound = inBoundOrder.addToMany(inBound, inBoundToOrder);
+        orderToManyInBound.setName("Operates");
+        //一个入库箱对多个入库信息
+        Property inBoundToCase = inBound.addLongProperty("inBoundCaseId").getProperty();
+        inBound.addToOne(inBoundCase, inBoundToCase);
+        ToMany caseToManyInBound = inBoundCase.addToMany(inBound, inBoundToCase);
+        caseToManyInBound.setName("Operates");
+        //一个入库sku明细对多个入库信息
+        Property inBoundToLink = inBound.addLongProperty("inBoundDetailId").getProperty();
+        inBound.addToOne(inBoundLink, inBoundToLink);
+        ToMany linkToManyInBound = inBoundLink.addToMany(inBound, inBoundToLink);
+        linkToManyInBound.setName("Operates");
+
+        //-----------------------------------出库-------------------------------------------
+        //出库表
+        Entity outBoundOrder = schema.addEntity("OutBoundOrder");
+        outBoundOrder.addIdProperty();
+        outBoundOrder.addStringProperty("orderId");
+        outBoundOrder.addStringProperty("code");
+        outBoundOrder.addStringProperty("status");
+        outBoundOrder.addStringProperty("toWarehouseName");
+        outBoundOrder.addIntProperty("operateQty");
+        outBoundOrder.addIntProperty("qty");
+        outBoundOrder.addDateProperty("createTime");
+        outBoundOrder.addBooleanProperty("isCreate");
+        //出库明细表
+        Entity outBoundDetail = schema.addEntity("OutBoundDetail");
+        outBoundDetail.addIdProperty();
+        outBoundDetail.addStringProperty("barcode");
+        outBoundDetail.addIntProperty("operateQty");
+        outBoundDetail.addIntProperty("qty");
+        outBoundDetail.addDateProperty("refreshTime");
+        outBoundDetail.addStringProperty("skuName");
+        Property outBoundDetailToOrder = outBoundDetail.addLongProperty("outBoundOrderId").getProperty();
+        outBoundDetail.addToOne(outBoundOrder, outBoundDetailToOrder);
+        ToMany orderToManyDetail = outBoundOrder.addToMany(outBoundDetail, outBoundDetailToOrder);
+        orderToManyDetail.setName("Details");
+        //出库操作表
+        Entity outBoundOperate = schema.addEntity("OutBoundOperate");
+        outBoundOperate.addIdProperty();
+        outBoundOperate.addStringProperty("barcode");
+        outBoundOperate.addStringProperty("tagValue");
+        outBoundOperate.addStringProperty("deviceId");
+        outBoundOperate.addIntProperty("operateQty");
+        outBoundOperate.addStringProperty("multiBarcodeId");
+        outBoundOperate.addBooleanProperty("isUpload");
+        Property outBoundOperateToOrder = outBoundOperate.addLongProperty("outBoundOrderId").getProperty();
+        outBoundOperate.addToOne(outBoundOrder, outBoundOperateToOrder);
+        ToMany orderToManyOperate = outBoundOrder.addToMany(outBoundOperate, outBoundOperateToOrder);
+        orderToManyOperate.setName("Operates");
+        Property outBoundOperateToDetail = outBoundOperate.addLongProperty("outBoundDetailId").getProperty();
+        outBoundOperate.addToOne(outBoundDetail, outBoundOperateToDetail);
+        ToMany detailToManyOperate = outBoundDetail.addToMany(outBoundOperate, outBoundOperateToDetail);
+        detailToManyOperate.setName("Operates");
+
+        new DaoGenerator().generateAll(schema, "app/src/main/java-gen");
+    }
+}

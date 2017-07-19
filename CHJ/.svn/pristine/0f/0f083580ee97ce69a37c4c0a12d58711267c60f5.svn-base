@@ -1,0 +1,35 @@
+package com.lubin.chj.adapter;
+
+import android.content.Context;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
+
+import com.lubin.chj.R;
+import com.lubin.chj.bean.jsonToBean.QueryPcReturn;
+
+import java.util.List;
+
+/**
+ * Created by lubin on 2016/9/22.
+ */
+public class QybhAdapter extends BaseListAdapter<QueryPcReturn.ListBean> {
+
+    public QybhAdapter(Context context, List<QueryPcReturn.ListBean> list) {
+        super(context, list);
+    }
+
+    @Override
+    public View bindView(int position, View convertView, ViewGroup parent) {
+        if (convertView == null) {
+            convertView = mInflater.inflate(R.layout.item_lv_qubh, parent, false);
+        }
+        QueryPcReturn.ListBean listBean = getList().get(position);
+        TextView pch_idex = (TextView) convertView.findViewById(R.id.tv_item_index);
+        TextView pch = (TextView) convertView.findViewById(R.id.tv_qubh_pch);
+        pch_idex.setText(position+1+"");
+        pch.setText(listBean.getPch() + "");
+
+        return convertView;
+    }
+}

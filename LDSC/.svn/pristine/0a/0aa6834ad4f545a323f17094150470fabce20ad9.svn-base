@@ -1,0 +1,15 @@
+package com.lide.app.presenter.PInterface;
+
+
+import com.lubin.bean.InBoundOrder;
+import com.lubin.bean.SkuCollect;
+
+public interface IUploadCollectBySkuPresenter {
+    void getAllSkuCollectByTaskCode();
+    void getAllSkuCollectByOrderCode(String orderCode);
+    void addSkuCollect(SkuCollect skuCollect);
+    void deleteSkuCollect(SkuCollect skuCollect);
+    void updateSkuCollect(SkuCollect skuCollect);
+    void uploadAllSkuCollectByTaskCode();
+
+}

@@ -1,0 +1,43 @@
+package com.lubin.chj.adapter;
+
+import android.content.Context;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.CheckBox;
+import android.widget.TextView;
+
+import com.lubin.chj.R;
+import com.lubin.chj.bean.PcInfo;
+
+import java.util.List;
+
+/**
+ * Created by lubin on 2016/9/20.
+ */
+public class PcInfoAdapter extends BaseListAdapter<PcInfo> {
+
+    List<Boolean> flags;
+
+    public PcInfoAdapter(Context context, List<PcInfo> list, List<Boolean> flags) {
+        super(context, list);
+        this.flags = flags;
+    }
+
+    @Override
+    public View bindView(int position, View convertView, ViewGroup parent) {
+        if (convertView == null) {
+            convertView = mInflater.inflate(R.layout.item_lv_epc, parent, false);
+        }
+
+        PcInfo dataBean = getList().get(position);
+        CheckBox cb_clear = ViewHolder.get(convertView, R.id.cb_isClear);
+        TextView id = ViewHolder.get(convertView, R.id.textView_id);
+        TextView epc = ViewHolder.get(convertView, R.id.textView_epc);
+
+        cb_clear.setChecked(false);
+        cb_clear.setChecked(flags.get(position));
+        id.setText(String.valueOf(position + 1));
+        epc.setText(dataBean.getPch());
+        return convertView;
+    }
+}

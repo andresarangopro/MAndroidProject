@@ -1,0 +1,10 @@
+package com.lubin.chj.view.activity.VInterface;
+
+/**
+ * Created by lubin on 2016/9/22.
+ */
+public interface IStoreView extends IShowDialogView {
+    void ShowContinueDialog(String result);
+
+    void ClearData();
+}

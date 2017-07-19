@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="5dp"
+            android:text="已生成的出库单列表"
+            android:textColor="@color/management_text"
+            android:textSize="@dimen/text_size_small" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="right|center_vertical"
+            android:padding="5dp"
+            android:text="左滑删除/审核"
+            android:textColor="@color/management_text"
+            android:textSize="@dimen/text_size_minimum" />
+    </FrameLayout>
+
+    <com.lide.app.persistence.widget.view.SwipeListView
+        android:id="@+id/lv_contain_out_bound_case"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="5dp">
+
+        <Button
+            android:id="@+id/btn_create_out_bound_case"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_weight="1"
+            android:background="@drawable/button_common"
+            android:gravity="center"
+            android:text="生成出库单"
+            android:textColor="@drawable/button_common_text"
+            android:textSize="@dimen/text_size_middle" />
+
+    </LinearLayout>
+
+</LinearLayout>

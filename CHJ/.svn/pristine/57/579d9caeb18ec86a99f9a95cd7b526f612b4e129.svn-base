@@ -1,0 +1,166 @@
+package com.lubin.chj.view.activity.Fragment;
+
+import android.content.Context;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ListView;
+import android.widget.TextView;
+
+import com.lubin.chj.R;
+import com.lubin.chj.adapter.BaseListAdapter;
+import com.lubin.chj.adapter.ViewHolder;
+import com.lubin.chj.bean.jsonToBean.GetMyPzhListBean;
+import com.lubin.chj.presenter.PickPresenterImpl;
+import com.lubin.chj.view.activity.PickActivity;
+import com.lubin.chj.view.activity.VInterface.IPickView;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
+/**
+ * Created by hkr on 2017/1/20.
+ */
+public class PickInvoiceOderFragment extends FragmentBase implements IPickView {
+
+    @BindView(R.id.pick_invoice_num)
+    TextView pickInvoiceNum;
+    @BindView(R.id.lv_invoiceList)
+    ListView lvInvoiceList;
+
+
+    private View mView;
+    private List<GetMyPzhListBean.ListBean> beanList = new ArrayList<>();
+    private InvoiceOderListAdapter mAdapter;
+    private PickPresenterImpl mPresenter;
+    private PickActivity mActivity;
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        mView = inflater.inflate(R.layout.fragment_pick_invoice, container, false);
+        ButterKnife.bind(this, mView);
+        initView();
+        mPresenter = new PickPresenterImpl(this);
+        mActivity = ((PickActivity) getActivity());
+        return mView;
+    }
+
+    private void initView() {
+        mAdapter = new InvoiceOderListAdapter(getActivity(), beanList);
+        lvInvoiceList.setAdapter(mAdapter);
+        lvInvoiceList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                PickInvoiceFragment fragment = (PickInvoiceFragment) mActivity
+                        .getSupportFragmentManager()
+                        .findFragmentByTag("4");
+                fragment.startPickPhdh(mAdapter.getList().get(position));
+                fragment.initService();
+                mActivity.changeFragment(4);
+            }
+        });
+    }
+
+    public void queryListByType(String orderType) {
+        if (orderType != null) {
+            mPresenter.getOrderList(orderType, "phdh");
+        }
+    }
+
+    @OnClick({R.id.rb_store_code, R.id.rb_store_level, R.id.rb_order_code})
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.rb_store_code:
+                queryListByType("zd");
+                break;
+            case R.id.rb_store_level:
+                queryListByType("dj");
+                break;
+            case R.id.rb_order_code:
+                queryListByType("pzh");
+                break;
+        }
+    }
+
+    @Override
+    public void ShowPc(final Object o) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (o instanceof GetMyPzhListBean) {
+                    List<GetMyPzhListBean.ListBean> listBeen = ((GetMyPzhListBean) o).getList();
+                    pickInvoiceNum.setText(String.valueOf(listBeen.size()));
+                    mAdapter.addAll(listBeen);
+                }
+            }
+        });
+    }
+
+    @Override
+    public void changeBtnView() {
+
+    }
+
+    @Override
+    public void RemovePC(List list) {
+
+    }
+
+    @Override
+    public void ShowDialog(String result) {
+        mActivity.ShowDialog(result);
+    }
+
+    @Override
+    public void ActivityFinish() {
+
+    }
+
+
+    class InvoiceOderListAdapter extends BaseListAdapter<GetMyPzhListBean.ListBean> {
+
+
+        public InvoiceOderListAdapter(Context context, List<GetMyPzhListBean.ListBean> list) {
+            super(context, list);
+        }
+
+        @Override
+        public View bindView(int position, View convertView, ViewGroup parent) {
+            if (convertView == null) {
+                convertView = mInflater.inflate(R.layout.item_invoice_order, parent, false);
+            }
+            TextView storeCode = ViewHolder.get(convertView, R.id.pick_invoice_store_code);
+            TextView level = ViewHolder.get(convertView, R.id.pick_invoice_level);
+            TextView orderCode = ViewHolder.get(convertView, R.id.pick_order_code);
+            TextView allNum = ViewHolder.get(convertView, R.id.pick_invoice_all_num);
+            TextView pickNum = ViewHolder.get(convertView, R.id.pick_invoice_pick_num);
+
+            GetMyPzhListBean.ListBean listBean = list.get(position);
+
+            storeCode.setText(String.valueOf(listBean.getZd()));
+            level.setText(String.valueOf(listBean.getDj()));
+            orderCode.setText(String.valueOf(listBean.getPzh()));
+            allNum.setText(String.valueOf(listBean.getZsl()));
+            pickNum.setText(String.valueOf(listBean.getYjsl()));
+            return convertView;
+        }
+    }
+
+    @Override
+    public void finishByBackIcon() {
+        mActivity.changeFragment(0);
+    }
+
+    @Override
+    public void finishByBackBtn() {
+        mActivity.finish();
+    }
+}

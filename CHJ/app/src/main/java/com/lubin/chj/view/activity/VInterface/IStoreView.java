@@ -1,0 +1,18 @@
+package com.lubin.chj.view.activity.VInterface;
+
+import com.lubin.chj.bean.jsonToBean.GetPcWZReturnBean;
+
+import java.util.List;
+
+/**
+ * Created by lubin on 2016/9/22.
+ */
+public interface IStoreView extends IShowDialogView {
+    void ShowContinueDialog(String result);
+
+    void refreshData();
+
+    void ShowStore(List<GetPcWZReturnBean.ListBean> list);
+
+    void showDialogerror(String result);
+}

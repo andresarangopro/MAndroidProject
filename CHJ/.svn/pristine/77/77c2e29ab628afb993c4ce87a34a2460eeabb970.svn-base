@@ -1,0 +1,126 @@
+package com.lubin.chj.view.activity.Fragment;
+
+import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.RadioButton;
+import android.widget.TextView;
+
+import com.lubin.chj.R;
+import com.lubin.chj.recycler.AbsAdapterItem;
+import com.lubin.chj.recycler.BaseRecyclerAdapter;
+import com.lubin.chj.recycler.GridRecyclerView;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
+/**
+ * Created by hkr on 2017/1/19.
+ */
+
+public class PickDirectFragmentCs extends FragmentBase {
+
+    @BindView(R.id.pick_direct_id)
+    TextView pickDirectId;
+    @BindView(R.id.pick_direct_level)
+    TextView pickDirectLevel;
+    @BindView(R.id.pick_direct_all_num)
+    TextView pickDirectAllNum;
+    @BindView(R.id.pick_direct_num)
+    TextView pickDirectNum;
+    @BindView(R.id.pick_direct_layout)
+    View pickDirectLayout;
+
+
+    private View mView;
+    private GridRecyclerView pickDirectListView;
+    public BaseRecyclerAdapter pickDirectListAdapter;
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        mView = inflater.inflate(R.layout.fragment_pick_direct, container, false);
+        ButterKnife.bind(this, mView);
+        initView();
+        initData();
+        return mView;
+    }
+
+    private void initData() {
+        for (int i = 0; i < 5; i++) pickDirectListAdapter.addItem(new PickDirectItem());
+    }
+
+    private void initView() {
+        pickDirectListView = new GridRecyclerView(getActivity());
+        ((ViewGroup) pickDirectLayout).addView(pickDirectListView, 0,
+                new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        pickDirectListView.setSpanCount(1);
+        pickDirectListView.setItemMargin(0);
+        pickDirectListAdapter = new BaseRecyclerAdapter();
+        pickDirectListView.setAdapter(pickDirectListAdapter);
+        pickDirectListView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                return false;
+            }
+        });
+        pickDirectListAdapter.clear();
+    }
+
+    @OnClick({R.id.btn_bright_lights, R.id.btn_pick_goods, R.id.btn_complete})
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.btn_bright_lights:
+                break;
+            case R.id.btn_pick_goods:
+                break;
+            case R.id.btn_complete:
+                break;
+        }
+    }
+
+
+    private class PickDirectItem extends AbsAdapterItem {
+        View pick_direct_view;
+        RadioButton radio_button;
+        TextView pick_direct_material;
+        TextView pick_direct_batch;
+        TextView pick_direct_store_counters;
+        TextView pick_direct_area;
+
+        @Override
+        public View onCreateView(ViewGroup parent, int position) {
+            View view = View.inflate(getActivity(), R.layout.fragment_pick_direct_item, null);
+            return view;
+        }
+
+        @Override
+        public void onBindView(BaseRecyclerAdapter.BaseViewHolder holder, View view, int position) {
+            pick_direct_view = view.findViewById(R.id.pick_direct_view);
+            radio_button = (RadioButton) view.findViewById(R.id.radio_button);
+            pick_direct_material = (TextView) view.findViewById(R.id.pick_direct_material);
+            pick_direct_batch = (TextView) view.findViewById(R.id.pick_direct_batch);
+            pick_direct_store_counters = (TextView) view.findViewById(R.id.pick_direct_store_counters);
+            pick_direct_area = (TextView) view.findViewById(R.id.pick_direct_area);
+
+            pick_direct_view.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    for (int i = 0; i < pickDirectListAdapter.getItemCount(); i++)
+                        ((PickDirectItem) pickDirectListAdapter.getItem(i)).radio_button.setChecked(false);
+                    radio_button.setChecked(true);
+                }
+            });
+        }
+
+        @Override
+        public void onViewAttachedToWindow(BaseRecyclerAdapter.BaseViewHolder holder, View view) {
+
+        }
+    }
+}

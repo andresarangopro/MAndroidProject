@@ -1,0 +1,87 @@
+package com.lide.app.presenter.outbound;
+
+import com.lide.app.MApplication;
+import com.lide.app.listener.OnLoadFinishListener;
+import com.lide.app.model.ConfirmModel;
+import com.lide.app.persistence.util.DBOperator;
+import com.lide.app.service.DbService;
+import com.lide.app.ui.VInterface.IDataFragmentView;
+import com.lide.app.ui.outbound.createOrder.OutboundTransaction;
+import com.lubin.bean.OutBoundDetail;
+import com.lubin.bean.OutBoundOperate;
+import com.lubin.bean.OutBoundOrder;
+import com.lubin.dao.OutBoundDetailDao;
+import com.lubin.dao.OutBoundOperateDao;
+import com.lubin.dao.OutBoundOrderDao;
+
+import java.util.Map;
+
+/**
+ * Created by lubin on 2016/11/19.
+ */
+
+public class ControlOBOrderByCreatePresenter {
+
+    private final DBOperator<OutBoundOrderDao, OutBoundOrder> orderDBOperator;
+    private final DBOperator<OutBoundDetailDao, OutBoundDetail> detailDBOperator;
+    private final DBOperator<OutBoundOperateDao, OutBoundOperate> operateDBOperator;
+    private IDataFragmentView view;
+    private ConfirmModel confirmModel;
+    DbService db = DbService.getInstance(MApplication.getInstance());
+
+    public ControlOBOrderByCreatePresenter(IDataFragmentView view) {
+        this.view = view;
+        this.confirmModel = new ConfirmModel();
+        orderDBOperator = OutboundTransaction.getOrderDBOperator();
+        detailDBOperator = OutboundTransaction.getDetailDBOperator();
+        operateDBOperator = OutboundTransaction.getOperateDBOperator();
+    }
+
+    public void loadAllOutBoundOrder() {
+        view.ShowData(db.loadAllOutBoundOrder());
+    }
+
+    /*
+    * 审核出库单
+    * */
+    public void confirmOutBoundOrder(final String orderId) {
+        if (orderId == null) {
+            view.ShowToast("出库单Id为空");
+        }
+        final OutBoundOrder outBoundOrder = orderDBOperator.
+                getItemByParameter(OutBoundOrderDao.Properties.OrderId, orderId).get(0);
+        for (OutBoundOperate outBoundOperate : outBoundOrder.getOperates()) {
+            if (!outBoundOperate.getIsUpload()) {
+                view.showDialog("还没未上传数据，请上传后再审核~");
+                return;
+            }
+        }
+        view.startProgressDialog("审核出库单中...");
+        try {
+            confirmModel.confirmOutBoundOrder(orderId, new OnLoadFinishListener() {
+                @Override
+                public void OnLoadFinish(Map<String, String> map) {
+                    if (map.get("statusCode").equals("200")) {
+                        if (outBoundOrder != null) {
+                            outBoundOrder.setStatus("已完成");
+                            outBoundOrder.update();
+                            view.ShowToast("审核成功");
+                        }
+                    } else {
+                        view.showDialog(map.get("result"));
+                    }
+                    view.stopProgressDialog(null);
+                }
+            });
+        } catch (Exception e) {
+            view.showDialog(e.toString());
+        }
+    }
+    //删除本地出库单
+    public void deleteOutBoundOrder(OutBoundOrder outBoundOrder) {
+        operateDBOperator.deleteDatas(outBoundOrder.getOperates());
+        detailDBOperator.deleteDatas(outBoundOrder.getDetails());
+        outBoundOrder.delete();
+        view.ShowData(db.loadAllOutBoundOrder());
+    }
+}

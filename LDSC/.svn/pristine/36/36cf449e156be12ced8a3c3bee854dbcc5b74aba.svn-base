@@ -1,0 +1,175 @@
+package com.lide.app.ui.entry;
+
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.support.v7.app.AlertDialog;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.text.InputType;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.EditText;
+
+import com.lide.app.R;
+import com.lide.app.adapter.TaskAdapter;
+import com.lide.app.presenter.takeStock.CheckTaskPresenterImpl;
+import com.lide.app.presenter.PInterface.ICheckTaskPresenter;
+import com.lide.app.ui.takeStock.StockTakingActivity;
+import com.lide.app.ui.takeStock.StockTakingBySkuActivity;
+import com.lide.app.ui.VInterface.ICheckTaskView;
+import com.lide.app.ui.FragmentBase;
+import com.lide.app.persistence.util.Utils;
+import com.lubin.bean.CheckTask;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
+public class CheckTaskFragment extends FragmentBase implements ICheckTaskView {
+
+    @BindView(R.id.rv_check_task)
+    RecyclerView mRvCheckTask;
+    private View mView;
+    private List<CheckTask> mDatas;
+    private TaskAdapter mAdapter;
+    private ICheckTaskPresenter mPresenter;
+    private int mode = 0;
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        mView = inflater.inflate(R.layout.fragment_check_task, container, false);
+        ButterKnife.bind(this, mView);
+        return mView;
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        init();
+        setAdapter();
+        super.onActivityCreated(savedInstanceState);
+    }
+
+    @Override
+    public void onResume() {
+        mPresenter.getAllCheckTask();
+        mode = 0;
+        super.onResume();
+    }
+
+    private void init() {
+        mDatas = new ArrayList<>();
+        mPresenter = new CheckTaskPresenterImpl(this);
+    }
+
+    private void setAdapter() {
+        mRvCheckTask.setLayoutManager(new LinearLayoutManager(mContext));
+        mAdapter = new TaskAdapter(mContext, mDatas, new TaskAdapter.IonSlidingViewClickListener() {
+
+            //点击进入任务详情
+            @Override
+            public void onItemClick(View view, int position) {
+                Utils.setCurrentTask(mAdapter.getCheckTask(position));
+                jumpToTakeStock();
+            }
+
+            //点击删除
+            @Override
+            public void onDeleteBtnCilck(View view, int position) {
+                mPresenter.deleteCheckTask(mAdapter.getCheckTask(position).getName());
+                mAdapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onModifyBtnCilck(View view, int position) {
+                showModifyDialog(position);
+            }
+        });
+        mRvCheckTask.setAdapter(mAdapter);
+        mRvCheckTask.setItemAnimator(new DefaultItemAnimator());
+    }
+
+    //点击修改任务
+    @Override
+    public void showResult(int result) {
+        ShowToast(mContext.getText(result).toString());
+    }
+
+    @Override
+    public void showCheckTaskList(List<CheckTask> tasks) {
+        mAdapter.refreshAllData(tasks);
+    }
+
+    @Override
+    public void jumpToTakeStock() {
+        switch (Utils.getCurrentTask().getMode()) {
+            case 0:
+                Intent intent = new Intent(getActivity(), StockTakingActivity.class);
+                startAnimActivity(intent);
+                break;
+            case 1:
+                Intent intent1 = new Intent(getActivity(), StockTakingBySkuActivity.class);
+                startAnimActivity(intent1);
+                break;
+        }
+    }
+
+    @OnClick(R.id.btn_check_task_add)
+    public void onClick(View view) {
+        switch (view.getId()) {
+            //点击添加任务按钮
+            case R.id.btn_check_task_add:
+                showAddDialog();
+                break;
+        }
+    }
+
+    //添加任务对话框
+    private void showAddDialog() {
+        final EditText editText = new EditText(getActivity());
+        editText.setHint("请输入盘点任务编号");
+        editText.setInputType(InputType.TYPE_CLASS_NUMBER);
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        builder.setTitle("添加任务,请输入任务编号！");
+        builder.setSingleChoiceItems(new String[]{"RFID模式", "条码模式"}, 0, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                mode = which;
+            }
+        });
+        builder.setView(editText);
+        builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                mPresenter.addCheckTask(editText.getText().toString(), mode);
+            }
+        });
+        builder.show();
+    }
+
+    public void showModifyDialog(final int position) {
+
+        final EditText editText = new EditText(getActivity());
+        editText.setHint("请输入新的任务编号！");
+        editText.setInputType(InputType.TYPE_CLASS_NUMBER);
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        builder.setTitle("修改任务\", \"请输入新的任务编号！");
+        builder.setView(editText);
+        builder.setPositiveButton("确定", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String InvalidName = mAdapter.getCheckTask(position).getName();
+                mPresenter.updateCheckTaskName(InvalidName, editText.getText().toString());
+                mAdapter.closeMenu();
+            }
+        });
+        builder.show();
+    }
+}

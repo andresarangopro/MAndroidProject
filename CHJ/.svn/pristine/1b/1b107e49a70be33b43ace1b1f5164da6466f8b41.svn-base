@@ -1,0 +1,147 @@
+package com.lubin.chj.view.activity;
+
+import android.content.Context;
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.design.widget.AppBarLayout;
+import android.support.v7.widget.AppCompatCheckBox;
+import android.support.v7.widget.Toolbar;
+import android.util.Log;
+import android.view.View;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
+import android.widget.CompoundButton;
+import android.widget.EditText;
+import android.widget.LinearLayout;
+
+import com.lubin.chj.MApplication;
+import com.lubin.chj.R;
+import com.lubin.chj.bean.LoginReturn;
+import com.lubin.chj.bean.User;
+import com.lubin.chj.presenter.LoginPresenterImpl;
+import com.lubin.chj.utils.GlobleConfig;
+import com.lubin.chj.utils.NetUtil;
+import com.lubin.chj.utils.SharePreferenceUtil;
+import com.lubin.chj.view.activity.VInterface.ILoginView;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
+/**
+ * @author DaiJiCheng
+ * @time 2016/9/29  10:03
+ * @desc ${TODD}
+ */
+public class LoginActivity extends BaseActivity implements ILoginView {
+
+    @BindView(R.id.tb_common)
+    Toolbar mTbCommon;
+    @BindView(R.id.common_title)
+    AppBarLayout mCommonTitle;
+    @BindView(R.id.et_user_name)
+    EditText mEtUserName;
+    @BindView(R.id.et_password)
+    EditText mEtPassword;
+    @BindView(R.id.btn_login)
+    Button mBtnLogin;
+    @BindView(R.id.ll_login)
+    LinearLayout mLlLogin;
+    @BindView(R.id.cb_protect_mode)
+    AppCompatCheckBox cbProtectMode;
+    private InputMethodManager mImm;
+    private LoginPresenterImpl mPresenter;
+    private User mUser;
+    private boolean flag = false;
+    private SharePreferenceUtil spUtil = MApplication.getInstance().getSpUtil();
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_login);
+        ButterKnife.bind(this);
+        initView();
+        initFocus();
+        mPresenter = new LoginPresenterImpl(this);
+    }
+
+    private void initView() {
+
+        cbProtectMode.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                flag = isChecked;
+            }
+        });
+
+        mEtUserName.setText(spUtil.getName());
+        mEtPassword.setText(spUtil.getPassword());
+        if (!mEtPassword.getText().toString().equals(""))
+            cbProtectMode.setChecked(true);
+    }
+
+    @Override
+    public void onLoginFinish(LoginReturn loginReturn) {
+        Log.d("test", "onLoginFinish: "+loginReturn.toString());
+        if (flag) {
+            spUtil.setPassword(mEtPassword.getText().toString());
+        } else {
+            spUtil.setPassword("");
+        }
+        spUtil.setName(mEtUserName.getText().toString());
+        GlobleConfig.rightId = loginReturn.getRightID();
+        Intent intent = new Intent(this, ConnectActivity.class);
+        startActivity(intent);
+        finish();
+    }
+
+    @Override
+    public void showReturnMessage(String msg) {
+        ShowDialog(msg);
+    }
+
+    @OnClick(R.id.btn_login)
+    public void onClick() {
+        //1)判空
+        if (isEmpty(mEtUserName, mEtPassword)) {
+            ShowToast("请输入完整信息！");
+            return;
+        }
+        //2)判网
+        if (!NetUtil.isNetworkAvailable(this)) {
+            ShowToast("网络不给力");
+            return;
+        }
+        initUser();
+        mPresenter.Login(mUser);
+    }
+
+
+    private void initUser() {
+        String mUserName = mEtUserName.getText().toString();
+        String mPassWord = mEtPassword.getText().toString();
+        mUser = new User(mUserName, mPassWord);
+    }
+
+
+    /**
+     * 获取焦点控制键盘的显示与隐藏
+     */
+    private void initFocus() {
+        mImm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        mLlLogin.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View view, boolean hasFocus) {
+                if (hasFocus) {
+                    mImm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+                }
+            }
+        });
+
+    }
+
+    @OnClick(R.id.ll_login)
+    public void onClick(View view) {
+        view.requestFocus();
+    }
+}

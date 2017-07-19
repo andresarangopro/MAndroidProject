@@ -1,0 +1,148 @@
+package com.lide.app.persistence.util;
+
+import android.database.Cursor;
+
+import com.lubin.dao.DaoSession;
+
+import org.greenrobot.greendao.AbstractDao;
+import org.greenrobot.greendao.Property;
+import org.greenrobot.greendao.query.QueryBuilder;
+import org.greenrobot.greendao.query.WhereCondition;
+
+import java.util.List;
+
+/**
+ * Created by lubin on 2016/11/30.
+ */
+
+public class DBOperator<T extends AbstractDao, E> {
+
+    public T mCustomDao;
+    public DaoSession mDaoSession;
+
+    public DBOperator(T customDao, DaoSession daoSession) {
+        this.mCustomDao = customDao;
+        this.mDaoSession = daoSession;
+    }
+
+    /**
+     * 插入一条数据
+     */
+    public long insertData(E e) {
+        return mCustomDao.insert(e);
+    }
+
+    /**
+     * 插入多条数据
+     */
+    public void insertDatas(final List<E> e) {
+        mDaoSession.runInTx(new Runnable() {
+            @Override
+            public void run() {
+                for (int i = 0; i < e.size(); i++) {
+                    E item = e.get(i);
+                    mCustomDao.insert(item);
+                }
+            }
+        });
+
+    }
+
+    /**
+     * 修改一条数据,根据id来匹配的
+     */
+    public void updateData(List<E> e) {
+        mCustomDao.updateInTx(e);
+    }
+
+
+    public Cursor queryBySql(String sql) {
+        return mDaoSession.getDatabase().rawQuery(sql, null);
+    }
+
+
+    public static String getUpdateSql(String tableName, String[] allColumns, String[] columnsValue, String[] condition, String[] conditionValue) {
+        String quotedTablename = '"' + tableName + '"';
+        StringBuilder builder = new StringBuilder("UPDATE ");
+        builder.append(quotedTablename).append(" SET ");
+        int length = allColumns.length;
+        for (int i = 0; i < length; i++) {
+            String columnName = allColumns[i];
+            String columnValue = columnsValue[i];
+            builder.append(columnName).append(" = ").append("\'" + columnValue + "\'");
+        }
+        builder.append(" WHERE ");
+        int confitionLength = condition.length;
+        for (int j = 0; j < confitionLength; j++) {
+            String key = condition[j];
+            String Value = conditionValue[j];
+            if (j != 0) {
+                builder.append(" and ");
+            }
+            builder.append(key).append(" = ").append("\'" + Value + "\'");
+        }
+        return builder.toString();
+    }
+
+    /**
+     * 根据某个字段获取单条数据
+     */
+    public List<E> getItemsByParameters(String orderRaw, WhereCondition... whereCondition) {
+        QueryBuilder qb = mCustomDao.queryBuilder();
+
+        switch (whereCondition.length) {
+            case 1:
+                qb.where(whereCondition[0]);
+                break;
+            case 2:
+                qb.where(whereCondition[0], whereCondition[1]);
+                break;
+            case 3:
+                qb.where(whereCondition[0], whereCondition[1], whereCondition[2]);
+                break;
+            case 4:
+                qb.where(whereCondition[0], whereCondition[1], whereCondition[2], whereCondition[3]);
+                break;
+        }
+        if (orderRaw != null)
+            qb.orderRaw(orderRaw);
+
+        return qb.list();
+    }
+
+
+    public List<E> getAllItem() {
+        return mCustomDao.loadAll();
+    }
+
+    public List<E> getItemByParameter(Property fieldName, String fieldValue) {
+        QueryBuilder qb = mCustomDao.queryBuilder();
+        qb.where(fieldName.eq(fieldValue));
+        List list = qb.list();
+        if (list != null) {
+            return list;
+        }
+        return null;
+    }
+
+    /**
+     * 根据ID获取一条数据
+     *
+     * @param id
+     * @return
+     */
+    public E getItemByID(long id) {
+        return (E) mCustomDao.load(id);
+    }
+
+
+    public void deleteDatas(List<E> datas) {
+        mCustomDao.deleteInTx(datas);
+    }
+
+
+    public static <T extends AbstractDao, E> DBOperator<T, E> getOperator(T t, Class<E> e) {
+        return new DBOperator<T, E>(t, ((DaoSession) t.getSession()));
+    }
+
+}

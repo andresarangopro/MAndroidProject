@@ -1,0 +1,409 @@
+package com.lide.app.ui.inbound.LS;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.view.animation.LinearInterpolator;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import com.google.gson.internal.LinkedTreeMap;
+import com.lide.app.MApplication;
+import com.lide.app.R;
+import com.lide.app.config.Configs;
+import com.lide.app.listener.OnFinishListener;
+import com.lide.app.persistence.util.DBOperator;
+import com.lide.app.persistence.util.SPUtils;
+import com.lide.app.persistence.util.SoundUtils;
+import com.lide.app.persistence.util.Utils;
+import com.lide.app.presenter.ScanPresenter;
+import com.lide.app.presenter.inbound.InBoundPresenter;
+import com.lide.app.ui.FragmentBase;
+import com.lide.app.ui.LoginActivity;
+import com.lide.app.ui.VInterface.IDataFragmentView;
+import com.lide.app.ui.inbound.InboundTransaction;
+import com.lubin.bean.InBoundCase;
+import com.lubin.bean.InBoundDetail;
+import com.lubin.bean.InBoundOperate;
+import com.lubin.bean.InBoundOrder;
+import com.lubin.dao.InBoundCaseDao;
+import com.lubin.dao.InBoundDetailDao;
+import com.lubin.dao.InBoundOperateDao;
+import com.lubin.dao.InBoundOrderDao;
+
+import org.greenrobot.greendao.query.WhereCondition;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+
+/**
+ * Created by lubin on 2016/11/30.
+ */
+
+public class ScanningRFIDForMixFragment extends FragmentBase implements IDataFragmentView<List<LinkedTreeMap>> {
+
+    @BindView(R.id.tv_order_sum)
+    TextView tvOrderSum;
+    @BindView(R.id.scan_rotate)
+    ImageView scanRotate;
+    @BindView(R.id.iv_close_open)
+    ImageView ivCloseOpen;
+    @BindView(R.id.sum_num)
+    TextView sumNum;
+    @BindView(R.id.scan_state)
+    TextView scanState;
+    @BindView(R.id.btn_scan_result)
+    Button btnScanResult;
+    @BindView(R.id.tv_scan_operate_sum)
+    TextView tvScanOperateSum;
+    @BindView(R.id.tv_scan_error_sum)
+    TextView tvScanErrorSum;
+    @BindView(R.id.btn_error_result)
+    Button btnErrorResult;
+
+    private View mView;
+    private ScanPresenter scanPresenter;
+    private Animation anim;
+    private int order;
+    private Timer mTimer;
+    private InboundActivity mActivity;
+    final List<Map> mData = new ArrayList<>();
+    private List<String> tags = new LinkedList<>();
+    private DBOperator<InBoundCaseDao, InBoundCase> caseDBOperator;
+    private DBOperator<InBoundOrderDao, InBoundOrder> orderDBOperator;
+    private DBOperator<InBoundOperateDao, InBoundOperate> operateDBOperator;
+    private InBoundPresenter inBoundPresenter;
+    private DBOperator<InBoundDetailDao, InBoundDetail> detailDBOperator;
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        mView = inflater.inflate(R.layout.fragment_scan_rfid_ib, container, false);
+        ButterKnife.bind(this, mView);
+        initData();
+        initTask();
+        initView();
+        return mView;
+    }
+
+    @Override
+    public void setUserVisibleHint(boolean isVisibleToUser) {
+        super.setUserVisibleHint(isVisibleToUser);
+        if (isVisibleToUser) {
+            showQtyAndOperateQty();
+            initScanPresenter();
+        } else {
+            if (scanPresenter == null) return;
+            scanPresenter.setMode(0);
+            scanPresenter.stopReadRfid();
+            scanPresenter.removeListener();
+        }
+    }
+
+    private void initData() {
+        order = 0;
+        anim = AnimationUtils.loadAnimation(getActivity(), R.anim.san_anim);
+        anim.setInterpolator(new LinearInterpolator());
+        anim.setFillAfter(true);
+        anim.setFillBefore(false);
+        anim.setFillEnabled(false);
+
+        mActivity = ((InboundActivity) getActivity());
+
+        caseDBOperator = InboundTransaction.getCaseDBOperator();
+        detailDBOperator = InboundTransaction.getDetailDBOperator();
+        orderDBOperator = InboundTransaction.getOrderDBOperator();
+        operateDBOperator = InboundTransaction.getOperateDBOperator();
+    }
+
+    private void initTask() {
+        mTimer = new Timer();
+        mTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if (order > 10) {
+                    setAnimDuration(1000);
+                } else if (order >= 0 && order <= 10) {
+                    setAnimDuration(5000);
+                }
+            }
+        }, 0, 500);
+    }
+
+    private void initView() {
+        showQtyAndOperateQty();
+        clear();
+    }
+
+    private void initScanPresenter() {
+        List<String> datas = new ArrayList<>();
+        List<InBoundOperate> operates;
+        if (mActivity.orderId != 0) {
+            operates = operateDBOperator.getItemsByParameters(null
+                    , InBoundOperateDao.Properties.InBoundOrderId.eq(mActivity.orderId)
+                    , InBoundOperateDao.Properties.Barcode.isNull()
+                    , InBoundOperateDao.Properties.OperateQty.eq(1));
+        } else {
+            operates = operateDBOperator.getItemsByParameters(null
+                    , InBoundOperateDao.Properties.InBoundCaseId.in(mActivity.getCasesIdList())
+                    , InBoundOperateDao.Properties.Barcode.isNull()
+                    , InBoundOperateDao.Properties.OperateQty.eq(1));
+        }
+        for (InBoundOperate inBoundOperate : operates) {
+            if (inBoundOperate.getBarcode() == null) {
+                datas.add(inBoundOperate.getEpc());
+            }
+        }
+        tags.addAll(datas);
+
+        scanPresenter = new ScanPresenter(this);
+        scanPresenter.initData();
+        scanPresenter.setMode(1);
+        scanPresenter.setCurrentSetting(ScanPresenter.Setting.stockRead);
+        scanPresenter.setListener(new OnFinishListener() {
+            @Override
+            public void OnFinish(String data) {
+                if (!tags.contains(data)) {
+                    order++;
+                    tags.add(data);
+                    SoundUtils.play(1);
+                    sumNum.setText(String.valueOf(tags.size()));
+                }
+            }
+        });
+        inBoundPresenter = new InBoundPresenter(this);
+    }
+
+    private void setAnimDuration(int durationMillis) {
+        if (anim.getDuration() != durationMillis) {
+            anim.setDuration(durationMillis);
+            anim.reset();
+        }
+        order = 0;
+    }
+
+    public void readOrClose() {
+        if (scanState.getText().toString().equals("点击开始")) {
+            scanRotate.setAnimation(anim);
+            scanRotate.setVisibility(View.VISIBLE);
+            btnScanResult.setEnabled(false);
+            btnScanResult.setBackground(greyBackground);
+            btnErrorResult.setEnabled(false);
+            btnErrorResult.setBackground(greyBackground);
+            mActivity.setViewEnabled(false);
+            scanState.setText("点击结束");
+            scanPresenter.startReadRfid();
+            clear();
+        } else {
+            scanRotate.setVisibility(View.INVISIBLE);
+            scanRotate.clearAnimation();
+            btnScanResult.setEnabled(true);
+            btnScanResult.setBackground(commonBackground);
+            btnErrorResult.setEnabled(true);
+            btnErrorResult.setBackground(commonBackground);
+            mActivity.setViewEnabled(true);
+            scanState.setText("点击开始");
+            scanPresenter.stopReadRfid();
+            saveData();
+        }
+    }
+
+    public void clear() {
+        tvScanOperateSum.setText("成功数：0");
+        tvScanErrorSum.setText("异常数：0");
+        sumNum.setText("0");
+        tags.clear();
+        mData.clear();
+    }
+
+
+    private void saveData() {
+        if (tags.size() == 0) return;
+        if (Utils.getApiKey() == null) {
+            Intent login = new Intent(getActivity(), LoginActivity.class);
+            login.putExtra("isAtNet", true);
+            startActivityForResult(login, Configs.LOGIN);
+        } else {
+            inBoundPresenter.SearchEpcList(tags);
+        }
+    }
+
+    @Override
+    public void ShowData(final List<LinkedTreeMap> linkedTreeMaps) {
+        startProgressDialog("生成中...");
+        runOnWorkThread(new Runnable() {
+            @Override
+            public void run() {
+                int succeed = 0;
+                for (LinkedTreeMap linkedTreeMap : linkedTreeMaps) {
+                    String epc = String.valueOf(linkedTreeMap.get("epc"));
+                    String barcode = String.valueOf(linkedTreeMap.get("barcode"));
+                    if (barcode.equals("null")) {
+                        Map<String, String> map = new HashMap<>();
+                        map.put("epc", epc);
+                        map.put("status", "没有绑定");
+                        mData.add(map);
+                        tags.remove(epc);
+                        continue;
+                    }
+                    List<InBoundOperate> operates;
+                    if (mActivity.orderId != 0) {
+                        operates = operateDBOperator.getItemsByParameters(null
+                                , InBoundOperateDao.Properties.InBoundOrderId.eq(mActivity.orderId)
+                                , InBoundOperateDao.Properties.Epc.eq(epc));
+                    } else {
+                        operates = operateDBOperator.getItemsByParameters(null
+                                , InBoundOperateDao.Properties.InBoundCaseId.in(mActivity.getCasesIdList())
+                                , InBoundOperateDao.Properties.Epc.eq(epc));
+                    }
+                    if (operates.size() > 0) {
+                        Map<String, String> map = new HashMap<>();
+                        map.put("barcode", barcode);
+                        map.put("epc", epc);
+                        map.put("status", "已存在");
+                        mData.add(map);
+                        tags.remove(epc);
+                        continue;
+                    }
+                    List<InBoundDetail> details;
+                    if (mActivity.orderId != 0) {
+                        details = detailDBOperator.getItemsByParameters(null
+                                , InBoundDetailDao.Properties.InBoundOrderId.eq(mActivity.orderId)
+                                , InBoundDetailDao.Properties.Barcode.eq(barcode)
+                                , new WhereCondition.StringCondition("T.QTY > T.OPERATE_QTY"));
+                    } else {
+                        details = detailDBOperator.getItemsByParameters(null
+                                , InBoundDetailDao.Properties.InBoundCaseId.in(mActivity.getCasesIdList())
+                                , InBoundDetailDao.Properties.Barcode.eq(barcode)
+                                , new WhereCondition.StringCondition("T.QTY > T.OPERATE_QTY"));
+                    }
+                    if (String.valueOf(SPUtils.get(MApplication.getInstance(), "inboundAllowExceed", "false")).equals("true")
+                            && details.size() == 0) {
+                        if (mActivity.orderId != 0) {
+                            details = detailDBOperator.getItemsByParameters(null
+                                    , InBoundDetailDao.Properties.InBoundOrderId.eq(mActivity.orderId)
+                                    , InBoundDetailDao.Properties.Barcode.eq(barcode)
+                                    , new WhereCondition.StringCondition("T.QTY <= T.OPERATE_QTY"));
+                        } else {
+                            details = detailDBOperator.getItemsByParameters(null
+                                    , InBoundDetailDao.Properties.InBoundCaseId.in(mActivity.getCasesIdList())
+                                    , InBoundDetailDao.Properties.Barcode.eq(barcode)
+                                    , new WhereCondition.StringCondition("T.QTY <= T.OPERATE_QTY"));
+                        }
+                    }
+                    if (details.size() == 0) {
+                        Map<String, String> map = new HashMap<>();
+                        map.put("barcode", barcode);
+                        map.put("epc", epc);
+                        map.put("status", "超出");
+                        mData.add(map);
+                        tags.remove(epc);
+                        continue;
+                    }
+                    InBoundDetail detail = details.get(0);
+                    InBoundOperate inBoundOperate = new InBoundOperate();
+                    inBoundOperate.setQty(0);
+                    inBoundOperate.setOperateQty(1);
+                    inBoundOperate.setIsUpload(false);
+                    inBoundOperate.setEpc(epc);
+                    inBoundOperate.setInBoundDetail(detail);
+                    inBoundOperate.setInBoundCase(detail.getInBoundCase());
+                    inBoundOperate.setInBoundOrder(detail.getInBoundOrder());
+
+                    detail.setOperateQty(detail.getOperateQty() + 1);
+                    detail.update();
+                    operateDBOperator.insertData(inBoundOperate);
+
+                    Map<String, String> map = new HashMap<>();
+                    map.put("barcode", barcode);
+                    map.put("epc", epc);
+                    map.put("status", "正常");
+                    mData.add(map);
+                    tags.remove(epc);
+                    succeed++;
+                }
+                for (String tag : tags) {
+                    Map<String, String> map = new HashMap<>();
+                    map.put("epc", tag);
+                    map.put("status", "异常");
+                    mData.add(map);
+                }
+                updateTextView(succeed);
+                stopProgressDialog(null);
+            }
+        });
+    }
+
+    private void updateTextView(final int size) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                mActivity.recount();
+                showQtyAndOperateQty();
+                tvScanOperateSum.setText("成功数：" + String.valueOf(size));
+                tvScanErrorSum.setText("异常数：" + String.valueOf(Integer.parseInt(sumNum.getText().toString()) - size));
+            }
+        });
+    }
+
+    @OnClick({R.id.iv_close_open, R.id.btn_scan_result, R.id.btn_error_result})
+    public void onClick(View view) {
+        switch (view.getId()) {
+            case R.id.iv_close_open:
+                readOrClose();
+                break;
+            case R.id.btn_scan_result:
+                mActivity.setCurrentFragment(5);
+                break;
+            case R.id.btn_error_result:
+                mActivity.setCurrentFragment(6);
+                ((ErrorResultsFragment) InboundActivity.fragments.get(6)).showErrorResultsData(mData);
+                break;
+        }
+    }
+
+
+    private void showQtyAndOperateQty() {
+        if (mActivity.orderId != 0) {
+            InBoundOrder inBoundOrder = orderDBOperator.getItemByID(mActivity.orderId);
+            tvOrderSum.setText(inBoundOrder.getQty() + "/" + inBoundOrder.getOperateQty());
+        } else {
+            int qty = caseDBOperator.rawQueryForSum(mActivity.getCasesId()
+                    , "_ID in (" + mActivity.getParameter() + ") "
+                    , "QTY", " IN_BOUND_CASE ");
+            int operateQty = caseDBOperator.rawQueryForSum(mActivity.getCasesId()
+                    , "_ID in (" + mActivity.getParameter() + ") "
+                    , "OPERATE_QTY", " IN_BOUND_CASE ");
+            tvOrderSum.setText(qty + "/" + operateQty);
+        }
+    }
+
+    public void resetScanPresenter(){
+        scanPresenter.setListener(new OnFinishListener() {
+            @Override
+            public void OnFinish(String data) {
+                if (!tags.contains(data)) {
+                    order++;
+                    tags.add(data);
+                    SoundUtils.play(1);
+                    sumNum.setText(String.valueOf(tags.size()));
+                }
+            }
+        });
+    }
+}
